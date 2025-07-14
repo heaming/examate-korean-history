@@ -1,58 +1,47 @@
-import { Platform } from 'react-native';
-import { DatabaseManager } from '../database/DatabaseManager';
+import { DatabaseAdapter } from '../database/DatabaseAdapter';
 
 export abstract class BaseRepository<T> {
-  protected getDb(): any {
-    if (Platform.OS === 'web') {
-      throw new Error('Database not available in web environment');
-    }
-    return DatabaseManager.getInstance().getDatabase();
+  protected dbAdapter: DatabaseAdapter;
+
+  constructor() {
+    this.dbAdapter = DatabaseAdapter.getInstance();
   }
 
   protected async executeQuery(
     query: string, 
     params: any[] = []
   ): Promise<any> {
-    const db = this.getDb();
-    return new Promise((resolve, reject) => {
-      db.transaction((tx: any) => {
-        tx.executeSql(
-          query,
-          params,
-          (tx: any, result: any) => resolve(result),
-          (tx: any, error: any) => {
-            console.error('SQL Error:', error);
-            reject(error);
-          }
-        );
-      });
-    });
+    // SELECT 쿼리인지 확인
+    const isSelectQuery = query.trim().toLowerCase().startsWith('select');
+    
+    if (isSelectQuery) {
+      const rows = await this.dbAdapter.getAllRows(query, params);
+      // expo-sqlite 형식으로 변환
+      return {
+        rows: {
+          length: rows.length,
+          item: (index: number) => rows[index],
+          _array: rows
+        }
+      };
+    } else {
+      const result = await this.dbAdapter.runSql(query, params);
+      return {
+        rowsAffected: result.changes || 0,
+        insertId: result.lastInsertRowid || 0
+      };
+    }
   }
 
   protected async executeBatch(queries: Array<{ query: string; params: any[] }>): Promise<void> {
-    const db = this.getDb();
-    return new Promise((resolve, reject) => {
-      db.transaction((tx: any) => {
-        queries.forEach(({ query, params }) => {
-          tx.executeSql(
-            query,
-            params,
-            () => {}, // success callback
-            (tx: any, error: any) => {
-              console.error('Batch SQL Error:', error);
-              reject(error);
-            }
-          );
-        });
-      }, 
-      (error: any) => {
-        console.error('Transaction Error:', error);
-        reject(error);
-      },
-      () => {
-        resolve();
-      });
-    });
+    try {
+      for (const { query, params } of queries) {
+        await this.dbAdapter.runSql(query, params);
+      }
+    } catch (error) {
+      console.error('Batch SQL Error:', error);
+      throw error;
+    }
   }
 
   // 추상 메서드들 - 각 Repository에서 구현해야 함
@@ -101,7 +90,7 @@ export abstract class BaseRepository<T> {
 
   // 데이터베이스 준비 상태 확인
   protected isDatabaseReady(): boolean {
-    if (Platform.OS === 'web') return false;
-    return DatabaseManager.getInstance().isReady();
+    // DatabaseAdapter가 초기화되었는지 확인
+    return this.dbAdapter !== null;
   }
 } 

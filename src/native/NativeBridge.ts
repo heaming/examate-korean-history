@@ -1,11 +1,24 @@
 import { BookmarkService } from '../services/BookmarkService';
+import { StudyStatsService } from '../services/StudyStatsService';
 import { NativeMessage } from '../types';
 
 export class NativeBridge {
   private bookmarkService: BookmarkService;
+  private studyStatsService: StudyStatsService;
 
   constructor() {
     this.bookmarkService = new BookmarkService();
+    this.studyStatsService = new StudyStatsService();
+    this.initializeServices();
+  }
+
+  private async initializeServices(): Promise<void> {
+    try {
+      await this.studyStatsService.initialize();
+      console.log('StudyStatsService initialized');
+    } catch (error) {
+      console.error('Failed to initialize StudyStatsService:', error);
+    }
   }
 
   async handleMessage(message: NativeMessage): Promise<any> {
@@ -35,6 +48,9 @@ export class NativeBridge {
         
         case 'GET_TODAY_STATS':
           return await this.handleGetTodayStats();
+        
+        case 'GET_HOME_PAGE_DATA':
+          return await this.handleGetHomePageData(message.data);
         
         // 최근 문제 관련
         case 'GET_RECENT_QUESTIONS':
@@ -91,41 +107,31 @@ export class NativeBridge {
     return await this.bookmarkService.removeBookmark(data.id);
   }
 
-  // 학습 통계 관련 헬퍼 메서드들 (추후 구현)
+  // 학습 통계 관련 헬퍼 메서드들
   private async handleGetStudyStats(): Promise<any> {
-    // StudyStatsService 구현 후 연결
-    return {
-      totalSolved: 0,
-      totalCorrect: 0,
-      totalStudyTime: 0,
-      studyStreak: 0,
-      lastStudyDate: null
-    };
+    return await this.studyStatsService.getStudyStats();
   }
 
   private async handleUpdateStudyStats(data: any): Promise<any> {
-    // StudyStatsService 구현 후 연결
-    return { success: true };
+    return await this.studyStatsService.updateStudyStats(data);
   }
 
   private async handleGetTodayStats(): Promise<any> {
-    // StudyStatsService 구현 후 연결
-    return {
-      solvedToday: 0,
-      correctToday: 0,
-      studyTimeToday: 0,
-      bookmarksToday: 0
-    };
+    return await this.studyStatsService.getTodayStats();
   }
 
-  // 최근 문제 관련 헬퍼 메서드들 (추후 구현)
+  private async handleGetHomePageData(data: any): Promise<any> {
+    const totalProblems = data?.totalProblems || 1250; // 기본값 또는 전달받은 값
+    return await this.studyStatsService.getHomePageData(totalProblems);
+  }
+
+  // 최근 문제 관련 헬퍼 메서드들
   private async handleGetRecentQuestions(): Promise<any> {
-    // RecentQuestionService 구현 후 연결
-    return [];
+    return await this.studyStatsService.getRecentQuestions();
   }
 
   private async handleSaveQuestionResult(data: any): Promise<any> {
-    // RecentQuestionService 구현 후 연결
+    await this.studyStatsService.recordQuestionResult(data);
     return { success: true };
   }
 

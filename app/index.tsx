@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { DatabaseManager } from '../src/database/DatabaseManager';
+import { DatabaseAdapter } from '../src/database/DatabaseAdapter';
+import { WebDatabaseDebugger } from '../src/debug/WebDatabaseDebugger';
 import { NativeBridge } from '../src/native/NativeBridge';
 
 export default function HomeScreen() {
@@ -18,9 +19,15 @@ export default function HomeScreen() {
   const initializeApp = async () => {
     try {
       console.log('Starting database initialization...');
-      await DatabaseManager.getInstance().initialize();
+      await DatabaseAdapter.getInstance().initialize();
       console.log('Database initialized successfully');
       setIsDbReady(true);
+      
+      // 개발 환경에서 웹 데이터베이스 디버깅 도구 활성화
+      if (Platform.OS === 'web' && process.env.NODE_ENV === 'development') {
+        const dbDebugger = new WebDatabaseDebugger();
+        dbDebugger.setupGlobalDebugFunctions();
+      }
       
       console.log('Creating NativeBridge...');
       const bridge = new NativeBridge();

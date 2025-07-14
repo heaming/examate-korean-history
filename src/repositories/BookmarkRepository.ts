@@ -2,6 +2,9 @@ import { BookmarkData } from '../types';
 import { BaseRepository } from './BaseRepository';
 
 export class BookmarkRepository extends BaseRepository<BookmarkData> {
+  constructor() {
+    super();
+  }
   async findAll(): Promise<BookmarkData[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks ORDER BY bookmarkedAt DESC'

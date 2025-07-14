@@ -1,5 +1,3 @@
-// examate-web의 네이티브 타입들을 기반으로 한 모바일 앱용 타입 정의
-
 export interface BookmarkData {
   id: string;
   questionId: string;
@@ -26,11 +24,11 @@ export interface WrongAnswerRecord {
 
 export interface StudyStats {
   id: number;
-  totalSolved: number;
-  totalCorrect: number;
-  totalStudyTime: number; // 분 단위
   studyStreak: number;
-  lastStudyDate: string; // ISO string
+  lastStudyDate: Date | null;
+  totalStudyTime: number;
+  createAt: Date;
+  updatedAt: Date;
 }
 
 export interface TodayStats {
@@ -90,6 +88,7 @@ export interface NativeMessage {
     | 'GET_STUDY_STATS'
     | 'UPDATE_STUDY_STATS'
     | 'GET_TODAY_STATS'
+    | 'GET_HOME_PAGE_DATA'
     // 최근 문제 관련
     | 'GET_RECENT_QUESTIONS'
     | 'SAVE_QUESTION_RESULT'
