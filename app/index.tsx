@@ -86,7 +86,7 @@ export default function HomeScreen() {
   // Android 에뮬레이터에서는 10.0.2.2가 호스트 PC의 localhost를 가리킴
   // Expo 환경에서는 실제 PC IP 주소 사용
   const webViewUrl = Platform.OS === 'android' 
-    ? 'http://192.168.200.142:3000'  // 모바일 브라우저에서 성공한 IP
+    ? 'http://192.168.200.162:3000'  // 현재 PC IP 주소
     : 'http://localhost:3000';
 
   return (

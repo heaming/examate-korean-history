@@ -146,7 +146,7 @@ export class DatabaseManager {
       
       if (count === 0) {
         await this.executeSql(
-          'INSERT INTO study_stats (id, totalSolved, totalCorrect, totalStudyTime, studyStreak) VALUES (1, 0, 0, 0, 0)'
+          'INSERT OR IGNORE INTO study_stats (id, totalSolved, totalCorrect, totalStudyTime, studyStreak) VALUES (1, 0, 0, 0, 0)'
         );
         console.log('Initial stats created');
       }
