@@ -14,7 +14,7 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
         lastStudyDate TEXT,
         totalStudyTime INTEGER NOT NULL DEFAULT 0,
         createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `;
     
@@ -73,18 +73,6 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
     `;
     
     await this.executeQuery(sql, values);
-  }
-
-  async incrementSolvedCount(isCorrect: boolean): Promise<void> {
-    const sql = `
-      UPDATE study_stats 
-      SET totalSolved = totalSolved + 1,
-          totalCorrect = totalCorrect + ?,
-          updatedAt = CURRENT_TIMESTAMP
-      WHERE id = 1
-    `;
-    
-    await this.executeQuery(sql, [isCorrect ? 1 : 0]);
   }
 
   async updateStudyStreak(streakCount: number): Promise<void> {
@@ -153,11 +141,9 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
   async delete(id: string | number): Promise<boolean> {
     // 학습 통계는 삭제하지 않고 초기화만 함
     await this.updateStats({
-      totalSolved: 0,
-      totalCorrect: 0,
-      totalStudyTime: 0,
       studyStreak: 0,
-      lastStudyDate: undefined
+      lastStudyDate: undefined,
+      totalStudyTime: 0
     });
     return true;
   }

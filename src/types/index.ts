@@ -25,10 +25,10 @@ export interface WrongAnswerRecord {
 export interface StudyStats {
   id: number;
   studyStreak: number;
-  lastStudyDate: Date | null;
+  lastStudyDate: string | undefined;
   totalStudyTime: number;
-  createAt: Date;
-  updatedAt: Date;
+  createAt: string;
+  updatedAt: string | undefined;
 }
 
 export interface TodayStats {

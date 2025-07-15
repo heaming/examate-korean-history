@@ -1,19 +1,19 @@
-import { RecentQuestionRepository } from '../repositories/RecentQuestionRepository';
+import { StudyHistoryRepository } from '../repositories/StudyHistoryRepository';
 import { StudyStatsRepository } from '../repositories/StudyStatsRepository';
 import { HomePageData, StudyStats, TodayStats } from '../types';
 
 export class StudyStatsService {
   private studyStatsRepository: StudyStatsRepository;
-  private recentQuestionRepository: RecentQuestionRepository;
+  private studyHistoryRepository: StudyHistoryRepository;
 
   constructor() {
     this.studyStatsRepository = new StudyStatsRepository();
-    this.recentQuestionRepository = new RecentQuestionRepository();
+    this.studyHistoryRepository = new StudyHistoryRepository();
   }
 
   async initialize(): Promise<void> {
     await this.studyStatsRepository.initializeTable();
-    await this.recentQuestionRepository.initializeTable();
+    await this.studyHistoryRepository.initializeTable();
   }
 
   async getStudyStats(): Promise<StudyStats> {
@@ -22,11 +22,11 @@ export class StudyStatsService {
     if (!stats) {
       // 기본 통계 생성
       const defaultStats: Omit<StudyStats, 'id'> = {
-        totalSolved: 0,
-        totalCorrect: 0,
-        totalStudyTime: 0,
-        studyStreak: 0,
-        lastStudyDate: null
+        studyStreak: number;
+        lastStudyDate: string | undefined;
+        totalStudyTime: number;
+        createAt: string;
+        updatedAt: string | undefined;
       };
       
       const created = await this.studyStatsRepository.create(defaultStats);
@@ -37,7 +37,7 @@ export class StudyStatsService {
   }
 
   async getTodayStats(): Promise<TodayStats> {
-    const todayStats = await this.recentQuestionRepository.getTodayStats();
+    const todayStats = await this.studyHistoryRepository.getTodayStats();
     
     return {
       solvedToday: todayStats.solvedToday,
@@ -60,7 +60,7 @@ export class StudyStatsService {
     studyTime: number; // 초 단위
   }): Promise<void> {
     // 최근 문제에 추가
-    await this.recentQuestionRepository.addQuestion({
+    await this.studyHistoryRepository.addQuestion({
       questionId: questionResult.questionId,
       solvedAt: new Date().toISOString(),
       isCorrect: questionResult.isCorrect,
@@ -81,14 +81,14 @@ export class StudyStatsService {
   }
 
   async updateStudyStreak(): Promise<void> {
-    const streak = await this.recentQuestionRepository.getStudyStreak();
+    const streak = await this.studyHistoryRepository.getStudyStreak();
     await this.studyStatsRepository.updateStudyStreak(streak);
   }
 
   async getHomePageData(totalProblems: number): Promise<HomePageData> {
     const studyStats = await this.getStudyStats();
     const todayStats = await this.getTodayStats();
-    const recentQuestions = await this.recentQuestionRepository.getRecentQuestions(5);
+    const recentQuestions = await this.studyHistoryRepository.getRecentQuestions(5);
     
     // 정답률 계산
     const accuracy = studyStats.totalSolved > 0 
@@ -130,7 +130,7 @@ export class StudyStatsService {
   }
 
   async getRecentQuestions(limit: number = 10) {
-    return await this.recentQuestionRepository.getRecentQuestions(limit);
+    return await this.studyHistoryRepository.getRecentQuestions(limit);
   }
 
   async resetStats(): Promise<void> {

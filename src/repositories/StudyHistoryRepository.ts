@@ -1,7 +1,7 @@
 import { RecentQuestionData } from '../types';
 import { BaseRepository } from './BaseRepository';
 
-export class RecentQuestionRepository extends BaseRepository<RecentQuestionData> {
+export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
   constructor() {
     super();
   }
