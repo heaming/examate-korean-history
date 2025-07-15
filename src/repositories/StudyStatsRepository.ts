@@ -1,4 +1,5 @@
-import { StudyStats } from '../types';
+import dayjs from 'dayjs';
+import { StudyStats } from '../types/database';
 import { BaseRepository } from './BaseRepository';
 
 export class StudyStatsRepository extends BaseRepository<StudyStats> {
@@ -84,7 +85,7 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
       WHERE id = 1
     `;
     
-    await this.executeQuery(sql, [streakCount, new Date().toISOString()]);
+    await this.executeQuery(sql, [streakCount, dayjs().format()]);
   }
 
   async addStudyTime(minutes: number): Promise<void> {
@@ -99,9 +100,17 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
   }
 
   private async createDefaultStats(): Promise<void> {
+    const now = dayjs().format();
     const sql = `
-      INSERT INTO study_stats (id, totalSolved, totalCorrect, totalStudyTime, studyStreak, lastStudyDate)
-      VALUES (1, 0, 0, 0, 0, NULL)
+      INSERT INTO study_stats (
+        id,
+        studyStreak, 
+        lastStudyDate,
+        totalStudyTime,
+        createdAt,
+        updatedAt       
+      )
+      VALUES (1, 0, '', 0, now, now);
     `;
     
     await this.executeQuery(sql);
@@ -142,7 +151,7 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
     // 학습 통계는 삭제하지 않고 초기화만 함
     await this.updateStats({
       studyStreak: 0,
-      lastStudyDate: undefined,
+      lastStudyDate: '',
       totalStudyTime: 0
     });
     return true;

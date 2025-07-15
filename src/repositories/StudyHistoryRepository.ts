@@ -1,7 +1,8 @@
-import { RecentQuestionData } from '../types';
+import dayjs from 'dayjs';
+import { StudyHistory } from '../types/database';
 import { BaseRepository } from './BaseRepository';
 
-export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
+export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   constructor() {
     super();
   }
@@ -13,8 +14,7 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
         questionId TEXT NOT NULL,
         solvedAt TEXT NOT NULL,
         isCorrect INTEGER NOT NULL DEFAULT 0,
-        studyTime INTEGER NOT NULL DEFAULT 0,
-        userAnswer INTEGER NOT NULL,
+        userAnswer INTEGER DEFAULT 0,
         correctAnswer INTEGER NOT NULL,
         createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
@@ -31,9 +31,9 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     await this.executeQuery(indexSql);
   }
 
-  async addQuestion(data: Omit<RecentQuestionData, 'id'>): Promise<RecentQuestionData> {
+  async addQuestion(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     const sql = `
-      INSERT INTO recent_questions (questionId, solvedAt, isCorrect, studyTime, userAnswer, correctAnswer)
+      INSERT INTO recent_questions (questionId, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
     
@@ -41,9 +41,9 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
       data.questionId,
       data.solvedAt,
       this.booleanToInteger(data.isCorrect),
-      data.studyTime,
       data.userAnswer,
-      data.correctAnswer
+      data.correctAnswer,
+      data.createdAt
     ]);
     
     return {
@@ -52,7 +52,7 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     };
   }
 
-  async getRecentQuestions(limit: number = 10): Promise<RecentQuestionData[]> {
+  async getRecentQuestions(limit: number = 10): Promise<StudyHistory[]> {
     const sql = `
       SELECT * FROM recent_questions 
       ORDER BY solvedAt DESC 
@@ -60,7 +60,7 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     `;
     
     const result = await this.executeQuery(sql, [limit]);
-    const questions: RecentQuestionData[] = [];
+    const questions: StudyHistory[] = [];
     
     for (let i = 0; i < result.rows.length; i++) {
       const row = result.rows.item(i);
@@ -69,16 +69,16 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
         questionId: row.questionId,
         solvedAt: row.solvedAt,
         isCorrect: this.integerToBoolean(row.isCorrect),
-        studyTime: row.studyTime,
         userAnswer: row.userAnswer,
-        correctAnswer: row.correctAnswer
+        correctAnswer: row.correctAnswer,
+        createdAt: row.createdAt
       });
     }
     
     return questions;
   }
 
-  async getQuestionsByDate(date: string): Promise<RecentQuestionData[]> {
+  async getQuestionsByDate(date: string): Promise<StudyHistory[]> {
     const sql = `
       SELECT * FROM recent_questions 
       WHERE DATE(solvedAt) = DATE(?)
@@ -86,7 +86,7 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     `;
     
     const result = await this.executeQuery(sql, [date]);
-    const questions: RecentQuestionData[] = [];
+    const questions: StudyHistory[] = [];
     
     for (let i = 0; i < result.rows.length; i++) {
       const row = result.rows.item(i);
@@ -95,9 +95,9 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
         questionId: row.questionId,
         solvedAt: row.solvedAt,
         isCorrect: this.integerToBoolean(row.isCorrect),
-        studyTime: row.studyTime,
         userAnswer: row.userAnswer,
-        correctAnswer: row.correctAnswer
+        correctAnswer: row.correctAnswer,
+        createdAt: row.createdAt
       });
     }
     
@@ -109,13 +109,12 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     correctToday: number;
     studyTimeToday: number;
   }> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = dayjs().format('YYYY-MM-DD');
     
     const sql = `
       SELECT 
         COUNT(*) as solvedToday,
-        SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) as correctToday,
-        SUM(studyTime) as studyTimeToday
+        SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) as correctToday
       FROM recent_questions 
       WHERE DATE(solvedAt) = DATE(?)
     `;
@@ -134,7 +133,7 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     return {
       solvedToday: row.solvedToday || 0,
       correctToday: row.correctToday || 0,
-      studyTimeToday: Math.round((row.studyTimeToday || 0) / 60) // 초를 분으로 변환
+      studyTimeToday: 0 // StudyHistory에서 studyTime 제거되어 0으로 설정
     };
   }
 
@@ -152,16 +151,15 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     if (result.rows.length === 0) return 0;
     
     let streak = 0;
-    const today = new Date();
+    const today = dayjs();
     
     for (let i = 0; i < result.rows.length; i++) {
       const row = result.rows.item(i);
-      const studyDate = new Date(row.study_date);
-      const expectedDate = new Date(today);
-      expectedDate.setDate(today.getDate() - i);
+      const studyDate = dayjs(row.study_date);
+      const expectedDate = today.subtract(i, 'day');
       
       // 날짜 비교 (시간 제외)
-      if (studyDate.toDateString() === expectedDate.toDateString()) {
+      if (studyDate.format('YYYY-MM-DD') === expectedDate.format('YYYY-MM-DD')) {
         streak++;
       } else {
         break;
@@ -172,11 +170,11 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
   }
 
   // BaseRepository 추상 메서드 구현
-  async findAll(): Promise<RecentQuestionData[]> {
+  async findAll(): Promise<StudyHistory[]> {
     return await this.getRecentQuestions();
   }
 
-  async findById(id: string | number): Promise<RecentQuestionData | null> {
+  async findById(id: string | number): Promise<StudyHistory | null> {
     const sql = 'SELECT * FROM recent_questions WHERE id = ?';
     const result = await this.executeQuery(sql, [id]);
     
@@ -188,17 +186,17 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
       questionId: row.questionId,
       solvedAt: row.solvedAt,
       isCorrect: this.integerToBoolean(row.isCorrect),
-      studyTime: row.studyTime,
       userAnswer: row.userAnswer,
-      correctAnswer: row.correctAnswer
+      correctAnswer: row.correctAnswer,
+      createdAt: row.createdAt
     };
   }
 
-  async create(data: Omit<RecentQuestionData, 'id'>): Promise<RecentQuestionData> {
+  async create(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     return await this.addQuestion(data);
   }
 
-  async update(id: string | number, data: Partial<RecentQuestionData>): Promise<RecentQuestionData> {
+  async update(id: string | number, data: Partial<StudyHistory>): Promise<StudyHistory> {
     const updateFields = [];
     const values = [];
     
@@ -217,11 +215,6 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
       values.push(this.booleanToInteger(data.isCorrect));
     }
     
-    if (data.studyTime !== undefined) {
-      updateFields.push('studyTime = ?');
-      values.push(data.studyTime);
-    }
-    
     if (data.userAnswer !== undefined) {
       updateFields.push('userAnswer = ?');
       values.push(data.userAnswer);
@@ -230,6 +223,11 @@ export class StudyHistoryRepository extends BaseRepository<RecentQuestionData> {
     if (data.correctAnswer !== undefined) {
       updateFields.push('correctAnswer = ?');
       values.push(data.correctAnswer);
+    }
+    
+    if (data.createdAt !== undefined) {
+      updateFields.push('createdAt = ?');
+      values.push(data.createdAt);
     }
     
     if (updateFields.length === 0) {

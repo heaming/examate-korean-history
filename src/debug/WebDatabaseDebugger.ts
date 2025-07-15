@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { DatabaseAdapter } from '../database/DatabaseAdapter';
 
 export class WebDatabaseDebugger {
@@ -60,7 +61,7 @@ export class WebDatabaseDebugger {
         answer: '태조 이성계',
         note: '테스트 노트 1',
         tags: JSON.stringify(['조선', '건국', '이성계']),
-        bookmarkedAt: new Date().toISOString()
+        bookmarkedAt: dayjs().format()
       },
       {
         id: 'test-2',
@@ -73,7 +74,7 @@ export class WebDatabaseDebugger {
         answer: '광개토대왕',
         note: '테스트 노트 2',
         tags: JSON.stringify(['고구려', '광개토대왕', '영토확장']),
-        bookmarkedAt: new Date().toISOString()
+        bookmarkedAt: dayjs().format()
       },
       {
         id: 'test-3',
@@ -86,7 +87,7 @@ export class WebDatabaseDebugger {
         answer: '3.1운동',
         note: '테스트 노트 3',
         tags: JSON.stringify(['일제강점기', '독립운동', '3.1운동']),
-        bookmarkedAt: new Date().toISOString()
+        bookmarkedAt: dayjs().format()
       }
     ];
 
@@ -130,7 +131,7 @@ export class WebDatabaseDebugger {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `examate-db-${new Date().toISOString().slice(0, 10)}.db`;
+      a.download = `examate-db-${dayjs().format('YYYY-MM-DD')}.db`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

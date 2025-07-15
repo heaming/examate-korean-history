@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { WrongAnswerRecord, WrongAnswerStats } from '../types';
 import { BaseRepository } from './BaseRepository';
 
@@ -99,7 +100,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
       // 기존 레코드 업데이트
       return await this.update(questionId, {
         wrongCount: existing.wrongCount + 1,
-        lastWrongAt: new Date().toISOString(),
+        lastWrongAt: dayjs().format(),
         userAnswer,
         correctAnswer
       });
@@ -108,7 +109,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
       return await this.create({
         questionId,
         wrongCount: 1,
-        lastWrongAt: new Date().toISOString(),
+        lastWrongAt: dayjs().format(),
         isBookmarked: false,
         userAnswer,
         correctAnswer
@@ -154,11 +155,10 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     const averageWrongCount = avgResult.rows.item(0).avg || 0;
 
     // 최근 7일 오답 수
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgo = dayjs().subtract(7, 'day');
     const recentResult = await this.executeQuery(
       'SELECT COUNT(*) as count FROM wrong_answers WHERE lastWrongAt >= ?',
-      [sevenDaysAgo.toISOString()]
+      [sevenDaysAgo.format()]
     );
     const recentWrongAnswers = recentResult.rows.item(0).count;
 

@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { BookmarkRepository } from '../repositories/BookmarkRepository';
 import { BookmarkData } from '../types';
 
@@ -35,7 +36,7 @@ export class BookmarkService {
       // 북마크 생성
       const bookmark: Omit<BookmarkData, 'id'> = {
         ...bookmarkData,
-        bookmarkedAt: new Date().toISOString(),
+        bookmarkedAt: dayjs().format(),
         tags: bookmarkData.tags || []
       };
 
@@ -137,9 +138,9 @@ export class BookmarkService {
 
   async getTodayBookmarks(): Promise<BookmarkData[]> {
     try {
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+      const today = dayjs();
+      const startOfDay = today.startOf('day').format();
+      const endOfDay = today.endOf('day').format();
       
       return await this.bookmarkRepository.getBookmarksByDateRange(startOfDay, endOfDay);
     } catch (error) {
@@ -187,7 +188,7 @@ export class BookmarkService {
           answer: questionData.answer,
           note: questionData.note,
           tags: questionData.tags || [],
-          bookmarkedAt: new Date().toISOString()
+          bookmarkedAt: dayjs().format()
         });
         return { isBookmarked: true, bookmark: newBookmark };
       }
