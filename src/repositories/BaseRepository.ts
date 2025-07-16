@@ -93,4 +93,17 @@ export abstract class BaseRepository<T> {
     // DatabaseAdapter가 초기화되었는지 확인
     return this.dbAdapter !== null;
   }
+
+  async cleanup(): Promise<void> {
+    try {
+      console.log(`Cleaning up ${this.constructor.name}...`);
+
+      // 데이터베이스 연결 정리 등이 필요하다면 여기서 처리
+      // 현재는 SQLite를 사용하므로 특별한 정리 작업은 없음
+
+      console.log(`${this.constructor.name} cleaned up`);
+    } catch (error) {
+      console.error(`Error during ${this.constructor.name} cleanup:`, error);
+    }
+  }
 } 

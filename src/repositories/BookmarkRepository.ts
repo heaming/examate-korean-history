@@ -5,6 +5,46 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
   constructor() {
     super();
   }
+
+  /**
+   * 북마크 테이블 초기화
+   */
+  async initializeTable(): Promise<void> {
+    const sql = `
+      CREATE TABLE IF NOT EXISTS bookmarks (
+        id TEXT PRIMARY KEY,
+        questionId TEXT NOT NULL UNIQUE,
+        title TEXT NOT NULL,
+        category TEXT,
+        year INTEGER,
+        round INTEGER,
+        number INTEGER,
+        answer TEXT,
+        note TEXT,
+        tags TEXT,
+        bookmarkedAt TEXT NOT NULL,
+        createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+
+    await this.executeQuery(sql);
+
+    // 인덱스 생성
+    const indexSql = `
+      CREATE INDEX IF NOT EXISTS idx_bookmarks_question_id 
+      ON bookmarks(questionId);
+      
+      CREATE INDEX IF NOT EXISTS idx_bookmarks_bookmarked_at 
+      ON bookmarks(bookmarkedAt DESC);
+      
+      CREATE INDEX IF NOT EXISTS idx_bookmarks_category 
+      ON bookmarks(category);
+    `;
+
+    await this.executeQuery(indexSql);
+  }
+
   async findAll(): Promise<BookmarkData[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks ORDER BY bookmarkedAt DESC'

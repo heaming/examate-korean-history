@@ -104,62 +104,17 @@ export class StudyStatsService {
   }
 
   /**
-   * 홈페이지 데이터 조회
+   * 최근 문제 조회
    */
-  async getHomePageData(totalProblems: number): Promise<HomePageData> {
-    const studyStats = await this.getStudyStats();
-    const todayStats = await this.getTodayStats();
-    const recentQuestions = await this.studyHistoryRepository.getRecentQuestions(5);
-    
-    // 전체 문제 수와 정답 수 계산
-    const allHistory = await this.studyHistoryRepository.findAll();
-    const totalSolved = allHistory.length;
-    const totalCorrect = allHistory.filter(h => h.isCorrect).length;
-    
-    // 정답률 계산
-    const accuracy = totalSolved > 0 
-      ? Math.round((totalCorrect / totalSolved) * 100)
-      : 0;
-    
-    // 전체 진행률 계산
-    const progressPercentage = totalProblems > 0 
-      ? Math.round((totalSolved / totalProblems) * 100)
-      : 0;
-    
-    // 오늘의 정답률 계산
-    const todayAccuracy = todayStats.solvedToday > 0 
-      ? Math.round((todayStats.correctToday / todayStats.solvedToday) * 100)
-      : 0;
-
-    return {
-      // 학습 진도
-      totalProblems,
-      solvedProblems: totalSolved,
-      correctAnswers: totalCorrect,
-      studyStreak: studyStats.studyStreak,
-      accuracy,
-      progressPercentage,
-      
-      // 오늘의 학습
-      todaySolved: todayStats.solvedToday,
-      todayCorrect: todayStats.correctToday,
-      todayStudyTime: todayStats.studyTimeToday,
-      todayBookmarks: todayStats.bookmarksToday,
-      todayAccuracy,
-      
-      // 최근 문제
-      recentQuestions,
-      
-      // 북마크 (별도 서비스에서 관리)
-      bookmarks: []
-    };
+  async getRecentQuestions(limit: number = 3): Promise<StudyHistory[]> {
+    return await this.studyHistoryRepository.getRecentQuestions(limit);
   }
 
   /**
-   * 최근 문제 조회
+   * 전체 푼 문제 수 조회
    */
-  async getRecentQuestions(limit: number = 10): Promise<StudyHistory[]> {
-    return await this.studyHistoryRepository.getRecentQuestions(limit);
+  async getStudiedQuestionsCount(): Promise<number> {
+    return await this.studyHistoryRepository.getStudiedQuestionsCount();
   }
 
   /**
@@ -232,4 +187,24 @@ export class StudyStatsService {
       monthlyAccuracy
     };
   }
+
+  async cleanup(): Promise<void> {
+    try {
+      console.log('Cleaning up StudyStatsService...');
+
+      // Repository cleanup이 있다면 호출
+      if (this.studyStatsRepository && typeof this.studyStatsRepository.cleanup === 'function') {
+        await this.studyStatsRepository.cleanup();
+      }
+
+      if (this.studyHistoryRepository && typeof this.studyHistoryRepository.cleanup === 'function') {
+        await this.studyHistoryRepository.cleanup();
+      }
+
+      console.log('StudyStatsService cleaned up');
+    } catch (error) {
+      console.error('Error during StudyStatsService cleanup:', error);
+    }
+  }
+
 } 

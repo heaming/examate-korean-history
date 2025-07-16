@@ -52,11 +52,33 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     };
   }
 
-  async getRecentQuestions(limit: number = 10): Promise<StudyHistory[]> {
+  async getStudiedQuestionsCount(): Promise<number> {
+    const sql = `
+        SELECT count(*) as 'count'
+        FROM ( 
+            SELECT MAX(id) 
+            FROM recent_questions 
+            GROUP BY questionId 
+        )
+    `;
+
+    const result = await this.executeQuery(sql);
+
+    if (result.rows.length === 0) return 0;
+
+    return result.rows.item(0).count;
+  }
+
+  async getRecentQuestions(limit: number = 3): Promise<StudyHistory[]> {
     const sql = `
       SELECT * FROM recent_questions 
-      ORDER BY solvedAt DESC 
-      LIMIT ?
+      WHERE id IN (
+        SELECT MAX(id) FROM recent_questions 
+        GROUP BY questionId 
+        ORDER BY MAX(solvedAt) DESC 
+        LIMIT ?
+      )
+      ORDER BY solvedAt DESC
     `;
     
     const result = await this.executeQuery(sql, [limit]);

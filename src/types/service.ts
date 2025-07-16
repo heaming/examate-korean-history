@@ -19,25 +19,19 @@ export interface WrongAnswerStats {
 // 홈페이지 데이터 통합 타입
 export interface HomePageData {
   // 학습 진도
-  totalProblems: number;
-  solvedProblems: number;
-  correctAnswers: number;
+  solvedCount: number;
+  correctCount: number;
   studyStreak: number;
   accuracy: number;
-  progressPercentage: number;
+
+  // 최근 문제
+  recentQuestions: StudyHistory[];
   
   // 오늘의 학습
   todaySolved: number;
   todayCorrect: number;
   todayStudyTime: number;
   todayBookmarks: number;
-  todayAccuracy: number;
-  
-  // 최근 문제
-  recentQuestions: StudyHistory[];
-  
-  // 북마크
-  bookmarks: BookmarkData[];
 }
 
 // 주간 학습 통계

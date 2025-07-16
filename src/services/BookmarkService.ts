@@ -9,6 +9,20 @@ export class BookmarkService {
     this.bookmarkRepository = new BookmarkRepository();
   }
 
+  async initialize(): Promise<void> {
+    try {
+      console.log('Initializing BookmarkService...');
+
+      // Repository 초기화 (테이블 생성 등)
+      await this.bookmarkRepository.initializeTable();
+
+      console.log('BookmarkService initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize BookmarkService:', error);
+      throw error;
+    }
+  }
+
   async getAllBookmarks(): Promise<BookmarkData[]> {
     console.log('BookmarkService: 모든 북마크 조회 시작');
     const bookmarks = await this.bookmarkRepository.getAllBookmarks();
@@ -217,6 +231,21 @@ export class BookmarkService {
     } catch (error) {
       console.error('Error getting bookmark years:', error);
       return [];
+    }
+  }
+
+  async cleanup(): Promise<void> {
+    try {
+      console.log('Cleaning up BookmarkService...');
+
+      // Repository cleanup이 있다면 호출
+      if (this.bookmarkRepository && typeof this.bookmarkRepository.cleanup === 'function') {
+        await this.bookmarkRepository.cleanup();
+      }
+
+      console.log('BookmarkService cleaned up');
+    } catch (error) {
+      console.error('Error during BookmarkService cleanup:', error);
     }
   }
 } 
