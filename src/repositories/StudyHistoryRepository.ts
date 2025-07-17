@@ -2,6 +2,8 @@ import dayjs from 'dayjs';
 import { StudyHistory } from '../types/database';
 import { BaseRepository } from './BaseRepository';
 
+dayjs().locale('')
+
 export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   constructor() {
     super();
@@ -9,7 +11,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
 
   async initializeTable(): Promise<void> {
     const sql = `
-      CREATE TABLE IF NOT EXISTS recent_questions (
+      CREATE TABLE IF NOT EXISTS study_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         questionId TEXT NOT NULL,
         solvedAt TEXT NOT NULL,
@@ -24,8 +26,8 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     
     // 인덱스 생성
     const indexSql = `
-      CREATE INDEX IF NOT EXISTS idx_recent_questions_solved_at 
-      ON recent_questions(solvedAt DESC)
+      CREATE INDEX IF NOT EXISTS idx_study_history_solved_at 
+      ON study_history(solvedAt DESC)
     `;
     
     await this.executeQuery(indexSql);
@@ -33,7 +35,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
 
   async addQuestion(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     const sql = `
-      INSERT INTO recent_questions (questionId, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
+      INSERT INTO study_history (questionId, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
     
@@ -52,38 +54,46 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     };
   }
 
-  async getStudiedQuestionsCount(): Promise<number> {
+  async getStudyHistoryTotalCount(): Promise<{solvedCount: number, correctCount: number}> {
     const sql = `
-        SELECT count(*) as 'count'
-        FROM ( 
-            SELECT MAX(id) 
-            FROM recent_questions 
-            GROUP BY questionId 
-        )
+      SELECT
+        COUNT(*) AS solvedCount,
+        SUM(CASE WHEN isCorrect THEN 1 ELSE 0 END) AS correctCount
+      FROM (
+             SELECT *
+             FROM study_history
+             WHERE (questionId, solvedAt) IN (
+               SELECT questionId, MAX(solvedAt)
+               FROM study_history
+               GROUP BY questionId
+             )
+           ) AS latest
     `;
 
     const result = await this.executeQuery(sql);
 
-    if (result.rows.length === 0) return 0;
+    if (result.rows.length === 0) return { solvedCount: 0, correctCount: 0 };
 
-    return result.rows.item(0).count;
+    const row = result.rows.item(0);
+
+    return { solvedCount: row.solvedCount, correctCount: row.correctCount };
   }
 
   async getRecentQuestions(limit: number = 3): Promise<StudyHistory[]> {
     const sql = `
-      SELECT * FROM recent_questions 
-      WHERE id IN (
-        SELECT MAX(id) FROM recent_questions 
-        GROUP BY questionId 
-        ORDER BY MAX(solvedAt) DESC 
-        LIMIT ?
+      SELECT * FROM study_history
+      WHERE (questionId, solvedAt) IN (
+        SELECT questionId, MAX(solvedAt) AS maxSolvedAt
+        FROM study_history
+        GROUP BY questionId
       )
       ORDER BY solvedAt DESC
+      LIMIT ?
     `;
-    
+
     const result = await this.executeQuery(sql, [limit]);
     const questions: StudyHistory[] = [];
-    
+
     for (let i = 0; i < result.rows.length; i++) {
       const row = result.rows.item(i);
       questions.push({
@@ -96,13 +106,13 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
         createdAt: row.createdAt
       });
     }
-    
+
     return questions;
   }
 
   async getQuestionsByDate(date: string): Promise<StudyHistory[]> {
     const sql = `
-      SELECT * FROM recent_questions 
+      SELECT * FROM study_history 
       WHERE DATE(solvedAt) = DATE(?)
       ORDER BY solvedAt DESC
     `;
@@ -131,13 +141,13 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     correctToday: number;
     studyTimeToday: number;
   }> {
-    const today = dayjs().format('YYYY-MM-DD');
+    const today = dayjs().format();
     
     const sql = `
       SELECT 
         COUNT(*) as solvedToday,
         SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) as correctToday
-      FROM recent_questions 
+      FROM study_history 
       WHERE DATE(solvedAt) = DATE(?)
     `;
     
@@ -162,7 +172,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   async getStudyStreak(): Promise<number> {
     const sql = `
       SELECT DATE(solvedAt) as study_date
-      FROM recent_questions
+      FROM study_history
       GROUP BY DATE(solvedAt)
       ORDER BY study_date DESC
       LIMIT 100
@@ -197,7 +207,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   }
 
   async findById(id: string | number): Promise<StudyHistory | null> {
-    const sql = 'SELECT * FROM recent_questions WHERE id = ?';
+    const sql = 'SELECT * FROM study_history WHERE id = ?';
     const result = await this.executeQuery(sql, [id]);
     
     if (result.rows.length === 0) return null;
@@ -259,7 +269,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     }
     
     const sql = `
-      UPDATE recent_questions 
+      UPDATE study_history 
       SET ${updateFields.join(', ')}
       WHERE id = ?
     `;
@@ -274,7 +284,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   }
 
   async delete(id: string | number): Promise<boolean> {
-    const sql = 'DELETE FROM recent_questions WHERE id = ?';
+    const sql = 'DELETE FROM study_history WHERE id = ?';
     const result = await this.executeQuery(sql, [id]);
     
     return result.rowsAffected > 0;

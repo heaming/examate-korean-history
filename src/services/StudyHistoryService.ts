@@ -4,42 +4,28 @@ import { StudyStatsRepository } from '../repositories/StudyStatsRepository';
 import { StudyHistory, StudyStats } from '../types/database';
 import { HomePageData, MonthlyStats, TodayStats, WeeklyStats } from '../types/service';
 
-export class StudyStatsService {
-  private studyStatsRepository: StudyStatsRepository;
+export class StudyHistoryService {
   private studyHistoryRepository: StudyHistoryRepository;
 
   constructor() {
-    this.studyStatsRepository = new StudyStatsRepository();
     this.studyHistoryRepository = new StudyHistoryRepository();
   }
 
   async initialize(): Promise<void> {
-    await this.studyStatsRepository.initializeTable();
     await this.studyHistoryRepository.initializeTable();
   }
 
   /**
-   * 전체 학습 통계 조회
+   * 전체 학습 이력 count 조회
    */
-  async getStudyStats(): Promise<StudyStats> {
-    const stats = await this.studyStatsRepository.getStats();
+  async getStudyHistoryTotalCount(): Promise<{solvedCount: number, correctCount: number, accuracy: number}> {
+    const studyHistoryTotalCount = await this.studyHistoryRepository.getStudyHistoryTotalCount();
+    const accuracy = studyHistoryTotalCount.solvedCount > 0
+        ? Math.round((studyHistoryTotalCount.solvedCount / studyHistoryTotalCount.correctCount) * 100) : 0;
 
-    if (!stats) {
-      const now = dayjs().format();
-      const defaultStats: Omit<StudyStats, 'id'> = {
-        studyStreak: 0,
-        lastStudyDate: undefined,
-        totalStudyTime: 0,
-        createAt: now,
-        updatedAt: now,
-      };
-      
-      const created = await this.studyStatsRepository.create(defaultStats);
-      return created;
-    }
-    
-    return stats;
+    return { ...studyHistoryTotalCount, accuracy };
   }
+
 
   /**
    * 오늘의 학습 통계 조회
@@ -48,19 +34,11 @@ export class StudyStatsService {
     const todayStats = await this.studyHistoryRepository.getTodayStats();
     
     return {
-      todaySolved: todayStats.solvedToday,
-      todayCorrect: todayStats.correctToday,
-      todayStudyTime: todayStats.studyTimeToday, // 이미 분 단위로 변환됨
+      totalSolved: todayStats.solvedToday,
+      totalCorrect: todayStats.correctToday,
+      studyTimeToday: todayStats.studyTimeToday, // 이미 분 단위로 변환됨
       bookmarksToday: 0 // 북마크는 별도 서비스에서 관리
     };
-  }
-
-  /**
-   * 학습 통계 업데이트
-   */
-  async updateStudyStats(data: Partial<StudyStats>): Promise<StudyStats> {
-    await this.studyStatsRepository.updateStats(data);
-    return await this.getStudyStats();
   }
 
   /**
@@ -108,6 +86,13 @@ export class StudyStatsService {
    */
   async getRecentQuestions(limit: number = 3): Promise<StudyHistory[]> {
     return await this.studyHistoryRepository.getRecentQuestions(limit);
+  }
+
+  /**
+   * 전체 푼 문제 수 조회
+   */
+  async getStudiedQuestionsCount(): Promise<number> {
+    return await this.studyHistoryRepository.getStudiedQuestionsCount();
   }
 
   /**

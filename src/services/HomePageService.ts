@@ -1,9 +1,11 @@
 import { StudyStatsService } from './StudyStatsService';
 import { BookmarkService } from './BookmarkService';
 import { HomePageData } from '../types/service';
+import {StudyHistoryService} from "@/src/services/StudyHistoryService";
 
 export class HomePageService {
     private studyStatsService: StudyStatsService;
+    private studyHistoryService: StudyHistoryService;
     private bookmarkService: BookmarkService;
     private isInitialized: boolean = false;
 
@@ -66,11 +68,13 @@ export class HomePageService {
         try {
             // 각 서비스에서 필요한 데이터 조회
             const [
+                studyHistoryTotalCount,
                 studyStats,
                 todayStats,
                 recentQuestions,
                 todayBookmarks
             ] = await Promise.all([
+                this.studyHistoryService.getStudyHistoryTotalCount(),
                 this.studyStatsService.getStudyStats(),
                 this.studyStatsService.getTodayStats(),
                 this.studyStatsService.getRecentQuestions(3),
@@ -79,19 +83,19 @@ export class HomePageService {
 
             return {
                 // 학습 진도
-                solvedCount: studyStats.totalSolsved,
-                correctCount: studyStats.totalCorrect,
+                solvedCount: studyHistoryTotalCount.solvedCount,
+                correctCount: studyHistoryTotalCount.correctCount,
+                accuracy: studyHistoryTotalCount.accuracy,
                 studyStreak: studyStats.studyStreak,
-                accuracy,
-                progressPercentage,
+
+                // 최근 푼 문제
+                recentQuestions,
 
                 // 오늘의 학습
                 todaySolved: todayStats.solvedToday,
                 todayCorrect: todayStats.correctToday,
                 todayStudyTime: todayStats.studyTimeToday,
                 todayBookmarks: todayBookmarks.length,
-                todayAccuracy,
-                recentQuestions
             };
         } catch (error) {
             console.error('Error getting home page data:', error);

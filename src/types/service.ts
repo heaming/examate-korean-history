@@ -3,10 +3,10 @@
 import { BookmarkData, StudyHistory } from './database';
 
 export interface TodayStats {
-  solvedToday: number;
-  correctToday: number;
-  studyTimeToday: number; // 분 단위
-  bookmarksToday: number;
+  todaySolved: number;
+  todayCorrect: number;
+  todayStudyTime: number;
+  todayBookmarks: number;
 }
 
 export interface WrongAnswerStats {
