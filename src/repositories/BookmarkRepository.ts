@@ -23,8 +23,8 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
         note TEXT,
         tags TEXT,
         bookmarkedAt TEXT NOT NULL,
-        createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        createdAt TEXT NOT NULL DEFAULT  (date('now')),
+        updatedAt TEXT NOT NULL DEFAULT  (date('now'))
       )
     `;
 
@@ -135,7 +135,6 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     return result.rowsAffected > 0;
   }
 
-  // 추가 메서드들
   async findByQuestionId(questionId: string): Promise<BookmarkData | null> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks WHERE questionId = ?',
@@ -196,16 +195,29 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     });
   }
 
-  async getBookmarkCount(): Promise<number> {
+  async getBookmarkTotalCount(): Promise<number> {
     const result = await this.executeQuery('SELECT COUNT(*) as count FROM bookmarks');
     return result.rows.item(0).count;
   }
 
-  async getBookmarksByDateRange(startDate: string, endDate: string): Promise<BookmarkData[]> {
-    const result = await this.executeQuery(
-      'SELECT * FROM bookmarks WHERE bookmarkedAt BETWEEN ? AND ? ORDER BY bookmarkedAt DESC',
-      [startDate, endDate]
-    );
+  async getBookmarkCountByDate(date: string): Promise<number> {
+    const result = await this.executeQuery(`
+      SELECT count(*) as count
+      FROM bookmarks 
+      WHERE bookmarkedAt = ? 
+      ORDER BY bookmarkedAt DESC
+    `, [date]);
+
+    return (result.rows.length === 0) ? 0 : result.rows.item(0).count;
+  }
+
+  async getBookmarksByDate(date: string): Promise<BookmarkData[]> {
+    const result = await this.executeQuery(`
+      SELECT * 
+      FROM bookmarks 
+      WHERE bookmarkedAt = ? 
+      ORDER BY bookmarkedAt DESC
+    `, [date]);
     
     return Array.from({ length: result.rows.length }, (_, i) => {
       const row = result.rows.item(i);

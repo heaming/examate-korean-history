@@ -17,7 +17,7 @@ src/
 ├── services/                 # 비즈니스 로직 레이어
 │   └── BookmarkService.ts
 └── native/                   # 웹뷰 통신 레이어
-    └── NativeBridge.ts
+    └── BaseNativeBridge.ts
 ```
 
 ## 🗄️ 데이터베이스 스키마

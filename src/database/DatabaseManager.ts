@@ -1,5 +1,4 @@
 import * as SQLite from 'expo-sqlite';
-import { Platform } from 'react-native';
 
 export class DatabaseManager {
   private static instance: DatabaseManager;
@@ -15,11 +14,6 @@ export class DatabaseManager {
   }
 
   async initialize(): Promise<void> {
-    if (Platform.OS === 'web') {
-      console.log('Skipping SQLite initialization on web platform');
-      return;
-    }
-
     try {
       console.log('SQLite module loaded successfully');
       console.log('Starting database initialization...');
@@ -210,7 +204,7 @@ export class DatabaseManager {
 
   // 데이터베이스 리셋 (개발/테스트용)
   async resetDatabase(): Promise<void> {
-    if (!this.db || Platform.OS === 'web') return;
+    if (!this.db) return;
 
     const tables = [
       'bookmarks',

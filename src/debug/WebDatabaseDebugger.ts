@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { DatabaseAdapter } from '../database/DatabaseAdapter';
 
 export class WebDatabaseDebugger {
@@ -8,153 +7,100 @@ export class WebDatabaseDebugger {
     this.dbAdapter = DatabaseAdapter.getInstance();
   }
 
-  // 개발 환경에서만 사용 가능한 디버깅 메서드들
+  // 모든 테이블의 데이터를 콘솔에 출력
   async logAllTables(): Promise<void> {
-    if (!this.dbAdapter.isUsingWebDatabase()) {
-      console.log('Web database not available');
-      return;
-    }
-
-    console.log('=== 모든 테이블 데이터 ===');
+    const tables = ['bookmarks', 'wrong_answers', 'study_stats', 'recent_questions', 'exam_results', 'exam_question_results'];
     
-    const tables = ['bookmarks', 'wrong_answers', 'study_stats', 'recent_questions'];
-    
-    for (const table of tables) {
+    for (const tableName of tables) {
       try {
-        const rows = await this.dbAdapter.getAllRows(`SELECT * FROM ${table}`);
-        console.log(`\n${table.toUpperCase()} (${rows.length} rows):`);
+        console.log(`\n=== ${tableName.toUpperCase()} ===`);
+        const rows = await this.dbAdapter.getAllRows(`SELECT * FROM ${tableName}`);
         console.table(rows);
       } catch (error) {
-        console.log(`${table}: 테이블이 존재하지 않거나 오류 발생`);
+        console.warn(`Table ${tableName} not found or error:`, error);
       }
     }
   }
 
+  // 모든 데이터 삭제
   async clearAllData(): Promise<void> {
-    if (!this.dbAdapter.isUsingWebDatabase()) {
-      console.log('Web database not available');
-      return;
+    const tables = ['bookmarks', 'wrong_answers', 'study_stats', 'recent_questions', 'exam_results', 'exam_question_results'];
+    
+    for (const tableName of tables) {
+      try {
+        await this.dbAdapter.runSql(`DELETE FROM ${tableName}`);
+        console.log(`Cleared ${tableName}`);
+      } catch (error) {
+        console.warn(`Failed to clear ${tableName}:`, error);
+      }
     }
-
-    console.log('모든 데이터 삭제 중...');
-    await this.dbAdapter.resetDatabase();
-    console.log('모든 데이터가 삭제되었습니다.');
+    
+    console.log('All data cleared');
   }
 
+  // 테스트용 북마크 데이터 추가
   async addTestBookmarks(): Promise<void> {
-    if (!this.dbAdapter.isUsingWebDatabase()) {
-      console.log('Web database not available');
-      return;
-    }
-
-    console.log('테스트 북마크 추가 중...');
-    
     const testBookmarks = [
       {
-        id: 'test-1',
-        questionId: 'q-2023-1-1',
-        title: '조선 건국과 관련된 인물',
-        category: '조선시대',
-        year: 2023,
+        questionId: 'test-1',
+        title: '테스트 문제 1',
+        category: '한국사',
+        year: 2024,
         round: 1,
         number: 1,
-        answer: '태조 이성계',
+        answer: '1',
         note: '테스트 노트 1',
-        tags: JSON.stringify(['조선', '건국', '이성계']),
-        bookmarkedAt: dayjs().format()
+        tags: JSON.stringify(['테스트', '한국사'])
       },
       {
-        id: 'test-2',
-        questionId: 'q-2023-1-2',
-        title: '고구려의 영토 확장',
-        category: '고구려',
-        year: 2023,
+        questionId: 'test-2',
+        title: '테스트 문제 2',
+        category: '한국사',
+        year: 2024,
         round: 1,
         number: 2,
-        answer: '광개토대왕',
+        answer: '2',
         note: '테스트 노트 2',
-        tags: JSON.stringify(['고구려', '광개토대왕', '영토확장']),
-        bookmarkedAt: dayjs().format()
-      },
-      {
-        id: 'test-3',
-        questionId: 'q-2022-2-5',
-        title: '일제강점기 독립운동',
-        category: '근현대사',
-        year: 2022,
-        round: 2,
-        number: 5,
-        answer: '3.1운동',
-        note: '테스트 노트 3',
-        tags: JSON.stringify(['일제강점기', '독립운동', '3.1운동']),
-        bookmarkedAt: dayjs().format()
+        tags: JSON.stringify(['테스트', '한국사'])
       }
     ];
 
     for (const bookmark of testBookmarks) {
       try {
         await this.dbAdapter.runSql(
-          `INSERT INTO bookmarks (id, questionId, title, category, year, round, number, answer, note, tags, bookmarkedAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            bookmark.id,
-            bookmark.questionId,
-            bookmark.title,
-            bookmark.category,
-            bookmark.year,
-            bookmark.round,
-            bookmark.number,
-            bookmark.answer,
-            bookmark.note,
-            bookmark.tags,
-            bookmark.bookmarkedAt
-          ]
+          `INSERT OR REPLACE INTO bookmarks (questionId, title, category, year, round, number, answer, note, tags, bookmarkedAt) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+          [bookmark.questionId, bookmark.title, bookmark.category, bookmark.year, bookmark.round, bookmark.number, bookmark.answer, bookmark.note, bookmark.tags]
         );
       } catch (error) {
-        console.error('테스트 북마크 추가 실패:', bookmark.id, error);
+        console.error('Failed to add test bookmark:', error);
       }
     }
     
-    console.log('테스트 북마크 추가 완료!');
+    console.log('Test bookmarks added');
   }
 
-  async exportDatabase(): Promise<void> {
-    if (!this.dbAdapter.isUsingWebDatabase()) {
-      console.log('Web database not available');
-      return;
-    }
-
-    const data = this.dbAdapter.exportWebDatabase();
-    if (data) {
-      // 브라우저에서 파일 다운로드
-      const blob = new Blob([data], { type: 'application/octet-stream' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `examate-db-${dayjs().format('YYYY-MM-DD')}.db`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      console.log('데이터베이스 내보내기 완료!');
-    }
-  }
-
+  // 특정 테이블 정보 조회
   async getTableInfo(tableName: string): Promise<void> {
-    if (!this.dbAdapter.isUsingWebDatabase()) {
-      console.log('Web database not available');
-      return;
-    }
-
     try {
+      console.log(`\n=== ${tableName.toUpperCase()} TABLE INFO ===`);
+      
+      // 테이블 구조 조회
       const schema = await this.dbAdapter.getAllRows(`PRAGMA table_info(${tableName})`);
-      console.log(`${tableName} 테이블 스키마:`);
+      console.log('Schema:');
       console.table(schema);
       
-      const count = await this.dbAdapter.getAllRows(`SELECT COUNT(*) as count FROM ${tableName}`);
-      console.log(`${tableName} 총 레코드 수: ${count[0].count}`);
+      // 데이터 조회
+      const data = await this.dbAdapter.getAllRows(`SELECT * FROM ${tableName} LIMIT 10`);
+      console.log('Data (first 10 rows):');
+      console.table(data);
+      
+      // 총 행 수 조회
+      const countResult = await this.dbAdapter.getAllRows(`SELECT COUNT(*) as count FROM ${tableName}`);
+      console.log(`Total rows: ${countResult[0]?.count || 0}`);
+      
     } catch (error) {
-      console.error(`테이블 정보 조회 실패: ${tableName}`, error);
+      console.error(`Failed to get table info for ${tableName}:`, error);
     }
   }
 
@@ -165,23 +111,21 @@ export class WebDatabaseDebugger {
         logAllTables: () => this.logAllTables(),
         clearAllData: () => this.clearAllData(),
         addTestBookmarks: () => this.addTestBookmarks(),
-        exportDatabase: () => this.exportDatabase(),
         getTableInfo: (tableName: string) => this.getTableInfo(tableName),
         help: () => {
           console.log(`
-=== 웹 데이터베이스 디버깅 도구 ===
+=== 데이터베이스 디버깅 도구 ===
 사용법:
 - dbDebug.logAllTables()     : 모든 테이블 데이터 출력
 - dbDebug.clearAllData()     : 모든 데이터 삭제
 - dbDebug.addTestBookmarks() : 테스트 북마크 추가
-- dbDebug.exportDatabase()   : 데이터베이스 파일 다운로드
 - dbDebug.getTableInfo(name) : 특정 테이블 정보 조회
 - dbDebug.help()            : 이 도움말 표시
           `);
         }
       };
       
-      console.log('🔧 웹 데이터베이스 디버깅 도구가 활성화되었습니다!');
+      console.log('🔧 데이터베이스 디버깅 도구가 활성화되었습니다!');
       console.log('사용법을 보려면 dbDebug.help()를 입력하세요.');
     }
   }

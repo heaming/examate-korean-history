@@ -14,8 +14,8 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
         studyStreak INTEGER NOT NULL DEFAULT 0,
         lastStudyDate TEXT,
         totalStudyTime INTEGER NOT NULL DEFAULT 0,
-        createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        createdAt TEXT NOT NULL DEFAULT (date('now')),
+        updatedAt TEXT DEFAULT DEFAULT (date('now')),
       )
     `;
     
@@ -65,7 +65,7 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
     
     if (updateFields.length === 0) return;
     
-    updateFields.push('updatedAt = CURRENT_TIMESTAMP');
+    updateFields.push(`updatedAt =  (date('now'))`);
     
     const sql = `
       UPDATE study_stats 
@@ -81,18 +81,18 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
       UPDATE study_stats 
       SET studyStreak = ?,
           lastStudyDate = ?,
-          updatedAt = CURRENT_TIMESTAMP
+          updatedAt =  (date('now'))
       WHERE id = 1
     `;
     
-    await this.executeQuery(sql, [streakCount, dayjs().format()]);
+    await this.executeQuery(sql, [streakCount, dayjs().format('YYYY-MM-DD')]);
   }
 
   async addStudyTime(minutes: number): Promise<void> {
     const sql = `
       UPDATE study_stats 
       SET totalStudyTime = totalStudyTime + ?,
-          updatedAt = CURRENT_TIMESTAMP
+          updatedAt =  (date('now'))
       WHERE id = 1
     `;
     
@@ -100,7 +100,7 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
   }
 
   private async createDefaultStats(): Promise<void> {
-    const now = dayjs().format();
+    const now = dayjs().format('YYYY-MM-DD');
     const sql = `
       INSERT INTO study_stats (
         id,

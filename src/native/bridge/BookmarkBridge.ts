@@ -1,18 +1,22 @@
-import { NativeMessage } from '../../types';
+import { BaseNativeBridge } from '../BaseNativeBridge';
 import ServiceManager from '../../services/ServiceManager';
 
-export class BookmarkHandler {
+export class BookmarkBridge extends BaseNativeBridge {
     private serviceManager = ServiceManager.getInstance();
 
-    async handle(message: NativeMessage): Promise<any> {
+    getSupportedMessageTypes(): string[] {
+        return ['GET_BOOKMARKS', 'SAVE_BOOKMARK', 'REMOVE_BOOKMARK'];
+    }
+
+    async handleMessage(type: string, data?: any): Promise<any> {
         const bookmarkService = await this.serviceManager.getBookmarkService();
 
-        switch (message.type) {
+        switch (type) {
             case 'SAVE_BOOKMARK':
-                return await bookmarkService.addBookmark(message.data);
+                return await bookmarkService.addBookmark(data);
 
             case 'REMOVE_BOOKMARK':
-                return await bookmarkService.removeBookmark(message.data.id);
+                return await bookmarkService.removeBookmark(data.id);
 
             case 'GET_BOOKMARKS':
                 console.log('북마크 조회 요청 받음');
@@ -21,7 +25,7 @@ export class BookmarkHandler {
                 return bookmarks;
 
             default:
-                throw new Error(`Unknown bookmark message type: ${message.type}`);
+                throw new Error(`Unknown bookmark message type: ${type}`);
         }
     }
 }

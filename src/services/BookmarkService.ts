@@ -1,6 +1,8 @@
-import dayjs from 'dayjs';
 import { BookmarkRepository } from '../repositories/BookmarkRepository';
 import { BookmarkData } from '../types';
+import dayjs from 'dayjs'
+import 'dayjs/locale/ko'
+dayjs.locale('ko')
 
 export class BookmarkService {
   private bookmarkRepository: BookmarkRepository;
@@ -50,7 +52,7 @@ export class BookmarkService {
       // 북마크 생성
       const bookmark: Omit<BookmarkData, 'id'> = {
         ...bookmarkData,
-        bookmarkedAt: dayjs().format(),
+        bookmarkedAt: dayjs().format('YYYY-MM-DD'),
         tags: bookmarkData.tags || []
       };
 
@@ -141,31 +143,48 @@ export class BookmarkService {
     }
   }
 
-  async getBookmarkCount(): Promise<number> {
+  async getBookmarkTotalCount(): Promise<number> {
     try {
-      return await this.bookmarkRepository.getBookmarkCount();
+      return await this.bookmarkRepository.getBookmarkTotalCount();
     } catch (error) {
       console.error('Error getting bookmark count:', error);
       return 0;
     }
   }
 
+  async getBookmarkCountByDate(date: string): Promise<number> {
+    try {
+      return await this.bookmarkRepository.getBookmarkCountByDate(date);
+    } catch (error) {
+      console.error('Error getting bookmark count:', error);
+      return 0;
+    }
+  }
+
+  async getBookmarkTodayCount(): Promise<number> {
+    const today = dayjs().format('YYYY-MM-DD');
+    try {
+      return await this.bookmarkRepository.getBookmarkCountByDate(today);
+    } catch (error) {
+      console.error('Error getting today bookmark count:', error);
+      return 0;
+    }
+  }
+
   async getTodayBookmarks(): Promise<BookmarkData[]> {
     try {
-      const today = dayjs();
-      const startOfDay = today.startOf('day').format();
-      const endOfDay = today.endOf('day').format();
+      const today = dayjs().format('YYYY-MM-DD');
       
-      return await this.bookmarkRepository.getBookmarksByDateRange(startOfDay, endOfDay);
+      return await this.bookmarkRepository.getBookmarksByDate(today);
     } catch (error) {
       console.error('Error getting today bookmarks:', error);
       return [];
     }
   }
 
-  async getBookmarksByDateRange(startDate: string, endDate: string): Promise<BookmarkData[]> {
+  async getBookmarksByDate(date: string): Promise<BookmarkData[]> {
     try {
-      return await this.bookmarkRepository.getBookmarksByDateRange(startDate, endDate);
+      return await this.bookmarkRepository.getBookmarksByDate(date);
     } catch (error) {
       console.error('Error getting bookmarks by date range:', error);
       throw new Error('날짜별 북마크를 불러오는데 실패했습니다.');
@@ -202,7 +221,7 @@ export class BookmarkService {
           answer: questionData.answer,
           note: questionData.note,
           tags: questionData.tags || [],
-          bookmarkedAt: dayjs().format()
+          bookmarkedAt: dayjs().format('YYYY-MM-DD'),
         });
         return { isBookmarked: true, bookmark: newBookmark };
       }

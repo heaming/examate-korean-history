@@ -11,9 +11,11 @@ export class HomePageService {
 
     constructor(
         studyStatsService: StudyStatsService,
+        studyHistoryService: StudyHistoryService,
         bookmarkService: BookmarkService
     ) {
         this.studyStatsService = studyStatsService;
+        this.studyHistoryService = studyHistoryService;
         this.bookmarkService = bookmarkService;
     }
 
@@ -30,14 +32,6 @@ export class HomePageService {
         this.isInitialized = true;
     }
 
-    getStudyStatsService(): StudyStatsService {
-        return this.studyStatsService;
-    }
-
-    getBookmarkService(): BookmarkService {
-        return this.bookmarkService;
-    }
-
     /**
      * 홈페이지 데이터 조회
      */
@@ -46,45 +40,25 @@ export class HomePageService {
             throw new Error('HomePageService not initialized');
         }
 
-        /**
-         * export interface HomePageData {
-         *   // 학습 진도
-         *   solvedCount: number;
-         *   correctCount: number;
-         *   studyStreak: number;
-         *   accuracy: number;
-         *
-         *   // 최근 문제
-         *   recentQuestions: StudyHistory[];
-         *
-         *   // 오늘의 학습
-         *   todaySolved: number;
-         *   todayCorrect: number;
-         *   todayStudyTime: number;
-         *   todayBookmarks: number;
-         * }
-         */
-
         try {
-            // 각 서비스에서 필요한 데이터 조회
             const [
                 studyHistoryTotalCount,
+                studyHistoryTodayCount,
                 studyStats,
-                todayStats,
                 recentQuestions,
                 todayBookmarks
             ] = await Promise.all([
                 this.studyHistoryService.getStudyHistoryTotalCount(),
+                this.studyHistoryService.getStudyHistoryCountByDate(),
                 this.studyStatsService.getStudyStats(),
-                this.studyStatsService.getTodayStats(),
-                this.studyStatsService.getRecentQuestions(3),
-                this.bookmarkService.getTodayBookmarks()
+                this.studyHistoryService.getRecentQuestions(3),
+                this.bookmarkService.getBookmarkTodayCount()
             ]);
 
             return {
                 // 학습 진도
-                solvedCount: studyHistoryTotalCount.solvedCount,
-                correctCount: studyHistoryTotalCount.correctCount,
+                totalSolved: studyHistoryTotalCount.solvedCount,
+                totalCorrect: studyHistoryTotalCount.correctCount,
                 accuracy: studyHistoryTotalCount.accuracy,
                 studyStreak: studyStats.studyStreak,
 
@@ -92,10 +66,9 @@ export class HomePageService {
                 recentQuestions,
 
                 // 오늘의 학습
-                todaySolved: todayStats.solvedToday,
-                todayCorrect: todayStats.correctToday,
-                todayStudyTime: todayStats.studyTimeToday,
-                todayBookmarks: todayBookmarks.length,
+                todaySolved: studyHistoryTodayCount.solvedCount,
+                todayCorrect: studyHistoryTodayCount.correctCount,
+                todayBookmarks
             };
         } catch (error) {
             console.error('Error getting home page data:', error);

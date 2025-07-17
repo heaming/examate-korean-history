@@ -18,13 +18,12 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
         isCorrect INTEGER NOT NULL DEFAULT 0,
         userAnswer INTEGER DEFAULT 0,
         correctAnswer INTEGER NOT NULL,
-        createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        createdAt TEXT NOT NULL DEFAULT  (date('now'))
       )
     `;
     
     await this.executeQuery(sql);
-    
-    // 인덱스 생성
+
     const indexSql = `
       CREATE INDEX IF NOT EXISTS idx_study_history_solved_at 
       ON study_history(solvedAt DESC)
@@ -77,6 +76,40 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     const row = result.rows.item(0);
 
     return { solvedCount: row.solvedCount, correctCount: row.correctCount };
+  }
+
+
+  async getStudyHistoryCountByDate(date: string): Promise<{solvedCount: number, correctCount: number}> {
+    const sql = `
+      SELECT
+        COUNT(*) AS solvedCount,
+        SUM(CASE WHEN isCorrect THEN 1 ELSE 0 END) AS correctCount
+      FROM (
+             SELECT *
+             FROM study_history
+             WHERE (questionId, solvedAt) IN (
+               SELECT questionId, MAX(solvedAt)
+               FROM study_history
+               WHERE solvedAt = ? 
+               GROUP BY questionId
+             )
+           ) AS latest
+    `;
+
+    const result = await this.executeQuery(sql, [date]);
+
+    if (result.rows.length === 0) {
+      return {
+        solvedCount: 0,
+        correctCount: 0
+      };
+    }
+
+    const row = result.rows.item(0);
+    return {
+      solvedCount: row.solvedCount || 0,
+      correctCount: row.correctCount || 0
+    };
   }
 
   async getRecentQuestions(limit: number = 3): Promise<StudyHistory[]> {
@@ -136,38 +169,6 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     return questions;
   }
 
-  async getTodayStats(): Promise<{
-    solvedToday: number;
-    correctToday: number;
-    studyTimeToday: number;
-  }> {
-    const today = dayjs().format();
-    
-    const sql = `
-      SELECT 
-        COUNT(*) as solvedToday,
-        SUM(CASE WHEN isCorrect = 1 THEN 1 ELSE 0 END) as correctToday
-      FROM study_history 
-      WHERE DATE(solvedAt) = DATE(?)
-    `;
-    
-    const result = await this.executeQuery(sql, [today]);
-    
-    if (result.rows.length === 0) {
-      return {
-        solvedToday: 0,
-        correctToday: 0,
-        studyTimeToday: 0
-      };
-    }
-    
-    const row = result.rows.item(0);
-    return {
-      solvedToday: row.solvedToday || 0,
-      correctToday: row.correctToday || 0,
-      studyTimeToday: 0 // StudyHistory에서 studyTime 제거되어 0으로 설정
-    };
-  }
 
   async getStudyStreak(): Promise<number> {
     const sql = `

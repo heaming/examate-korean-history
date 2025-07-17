@@ -1,12 +1,23 @@
-import { NativeMessage } from '../../types';
+import { BaseNativeBridge } from '../BaseNativeBridge';
 import ServiceManager from '../../services/ServiceManager';
 
-export class WrongAnswerHandler {
+export class WrongAnswerBridge extends BaseNativeBridge {
     private serviceManager = ServiceManager.getInstance();
 
-    async handle(message: NativeMessage): Promise<any> {
+    getSupportedMessageTypes(): string[] {
+        return [
+            'SAVE_WRONG_ANSWER',
+            'GET_WRONG_ANSWERS',
+            'GET_WRONG_ANSWER_STATS',
+            'UPDATE_WRONG_ANSWER_NOTE',
+            'TOGGLE_WRONG_ANSWER_BOOKMARK',
+            'REMOVE_WRONG_ANSWER'
+        ];
+    }
+
+    async handleMessage(type: string, data?: any): Promise<any> {
         // WrongAnswerService 구현 후 연결
-        switch (message.type) {
+        switch (type) {
             case 'SAVE_WRONG_ANSWER':
                 return { success: true };
 
@@ -31,7 +42,7 @@ export class WrongAnswerHandler {
                 return { success: true };
 
             default:
-                throw new Error(`Unknown wrong answer message type: ${message.type}`);
+                throw new Error(`Unknown wrong answer message type: ${type}`);
         }
     }
 }

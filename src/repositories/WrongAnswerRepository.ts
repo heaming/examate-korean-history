@@ -100,7 +100,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
       // 기존 레코드 업데이트
       return await this.update(questionId, {
         wrongCount: existing.wrongCount + 1,
-        lastWrongAt: dayjs().format(),
+        lastWrongAt: dayjs().format('YYYY-MM-DD'),
         userAnswer,
         correctAnswer
       });
@@ -109,7 +109,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
       return await this.create({
         questionId,
         wrongCount: 1,
-        lastWrongAt: dayjs().format(),
+        lastWrongAt: dayjs().format('YYYY-MM-DD'),
         isBookmarked: false,
         userAnswer,
         correctAnswer
