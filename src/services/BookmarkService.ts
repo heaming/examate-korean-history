@@ -1,11 +1,12 @@
 import { BookmarkRepository } from '../repositories/BookmarkRepository';
-import { BookmarkData } from '../types';
+import {Bookmark, BookmarkData} from '../types';
 import dayjs from 'dayjs'
 import 'dayjs/locale/ko'
 dayjs.locale('ko')
 
 export class BookmarkService {
   private bookmarkRepository: BookmarkRepository;
+  private isInitialized: boolean = false;
 
   constructor() {
     this.bookmarkRepository = new BookmarkRepository();
@@ -15,24 +16,51 @@ export class BookmarkService {
     try {
       console.log('Initializing BookmarkService...');
 
-      // Repository 초기화 (테이블 생성 등)
       await this.bookmarkRepository.initializeTable();
 
       console.log('BookmarkService initialized successfully');
+      this.isInitialized = true;
     } catch (error) {
       console.error('Failed to initialize BookmarkService:', error);
       throw error;
     }
   }
 
-  async getAllBookmarks(): Promise<BookmarkData[]> {
-    console.log('BookmarkService: 모든 북마크 조회 시작');
+  /**
+   * 북마크 초기 데이터 조회
+   */
+  async getBookmarkData(): Promise<BookmarkData> {
+    if (!this.isInitialized) {
+      throw new Error('BookmarkService not initialized');
+    }
+
+    try {
+      const [
+        bookmarks,
+        totalCount
+      ] = await Promise.all([
+        this.bookmarkRepository.getBookmarks(),
+        this.bookmarkRepository.getBookmarksTotalCount(),
+      ]);
+
+      return {
+        bookmarks,
+        totalCount
+      }
+    } catch (error) {
+      console.error('Error getting bookmark page data:', error);
+      throw error;
+    }
+  }
+  
+
+  async getAllBookmarks(): Promise<Bookmark[]> {
     const bookmarks = await this.bookmarkRepository.getAllBookmarks();
     console.log('BookmarkService: 북마크 조회 완료, 총', bookmarks.length, '개');
     return bookmarks;
   }
 
-  async getBookmarkById(id: string): Promise<BookmarkData | null> {
+  async getBookmarkById(id: string): Promise<Bookmark | null> {
     try {
       return await this.bookmarkRepository.findById(id);
     } catch (error) {
@@ -41,19 +69,28 @@ export class BookmarkService {
     }
   }
 
-  async addBookmark(bookmarkData: Omit<BookmarkData, 'id'>): Promise<BookmarkData> {
+  async getBookmarks(limit: number=10, offset: number=10): Promise<Bookmark[]> {
+    try {
+      return await this.bookmarkRepository.getBookmarks(Number(limit), Number(offset));
+    } catch (error) {
+      console.error('Error getting bookmarks:', error);
+      return [];
+    }
+  }
+
+  async addBookmark(Bookmark: Omit<Bookmark, 'id'>): Promise<Bookmark> {
     try {
       // 중복 체크
-      const existing = await this.bookmarkRepository.findByQuestionId(bookmarkData.questionId);
+      const existing = await this.bookmarkRepository.findByQuestionId(Bookmark.questionId);
       if (existing) {
         throw new Error('이미 북마크된 문제입니다.');
       }
 
       // 북마크 생성
-      const bookmark: Omit<BookmarkData, 'id'> = {
-        ...bookmarkData,
+      const bookmark: Omit<Bookmark, 'id'> = {
+        ...Bookmark,
         bookmarkedAt: dayjs().format('YYYY-MM-DD'),
-        tags: bookmarkData.tags || []
+        tags: Bookmark.tags || []
       };
 
       return await this.bookmarkRepository.create(bookmark);
@@ -101,7 +138,7 @@ export class BookmarkService {
     }
   }
 
-  async updateBookmarkNote(id: string, note: string): Promise<BookmarkData> {
+  async updateBookmarkNote(id: string, note: string): Promise<Bookmark> {
     try {
       return await this.bookmarkRepository.update(id, { note });
     } catch (error) {
@@ -110,7 +147,7 @@ export class BookmarkService {
     }
   }
 
-  async getBookmarksByCategory(category: string): Promise<BookmarkData[]> {
+  async getBookmarksByCategory(category: string): Promise<Bookmark[]> {
     try {
       if (category === 'all') {
         return await this.getAllBookmarks();
@@ -122,7 +159,7 @@ export class BookmarkService {
     }
   }
 
-  async getBookmarksByYear(year: number): Promise<BookmarkData[]> {
+  async getBookmarksByYear(year: number): Promise<Bookmark[]> {
     try {
       return await this.bookmarkRepository.findByYear(year);
     } catch (error) {
@@ -131,7 +168,7 @@ export class BookmarkService {
     }
   }
 
-  async searchBookmarks(searchTerm: string): Promise<BookmarkData[]> {
+  async searchBookmarks(searchTerm: string): Promise<Bookmark[]> {
     try {
       if (!searchTerm.trim()) {
         return await this.getAllBookmarks();
@@ -171,7 +208,7 @@ export class BookmarkService {
     }
   }
 
-  async getTodayBookmarks(): Promise<BookmarkData[]> {
+  async getTodayBookmarks(): Promise<Bookmark[]> {
     try {
       const today = dayjs().format('YYYY-MM-DD');
       
@@ -182,7 +219,7 @@ export class BookmarkService {
     }
   }
 
-  async getBookmarksByDate(date: string): Promise<BookmarkData[]> {
+  async getBookmarksByDate(date: string): Promise<Bookmark[]> {
     try {
       return await this.bookmarkRepository.getBookmarksByDate(date);
     } catch (error) {
@@ -201,7 +238,7 @@ export class BookmarkService {
     answer?: string;
     note?: string;
     tags?: string[];
-  }): Promise<{ isBookmarked: boolean; bookmark?: BookmarkData }> {
+  }): Promise<{ isBookmarked: boolean; bookmark?: Bookmark }> {
     try {
       const existingBookmark = await this.bookmarkRepository.findByQuestionId(questionData.questionId);
       

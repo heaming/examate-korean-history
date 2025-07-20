@@ -1,6 +1,6 @@
 import { StudyStatsService } from './StudyStatsService';
 import { BookmarkService } from './BookmarkService';
-import { HomePageData } from '../types/service';
+import { HomePageData } from '../types/dto';
 import {StudyHistoryService} from "@/src/services/StudyHistoryService";
 
 export class HomePageService {

@@ -1,7 +1,7 @@
-import { BookmarkData } from '../types';
+import {Bookmark} from '../types';
 import { BaseRepository } from './BaseRepository';
 
-export class BookmarkRepository extends BaseRepository<BookmarkData> {
+export class BookmarkRepository extends BaseRepository<Bookmark> {
   constructor() {
     super();
   }
@@ -14,17 +14,15 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
       CREATE TABLE IF NOT EXISTS bookmarks (
         id TEXT PRIMARY KEY,
         questionId TEXT NOT NULL UNIQUE,
-        title TEXT NOT NULL,
-        category TEXT,
         year INTEGER,
         round INTEGER,
-        number INTEGER,
-        answer TEXT,
+        questionNumber TEXT NOT NULL,
+        questionText TEXT NOT NULL,
+        questionImageUrl TEXT,
+        correctAnswer INTEGER NOT NULL,
         note TEXT,
         tags TEXT,
-        bookmarkedAt TEXT NOT NULL,
-        createdAt TEXT NOT NULL DEFAULT  (date('now')),
-        updatedAt TEXT NOT NULL DEFAULT  (date('now'))
+        bookmarkedAt TEXT NOT NULL
       )
     `;
 
@@ -38,14 +36,12 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
       CREATE INDEX IF NOT EXISTS idx_bookmarks_bookmarked_at 
       ON bookmarks(bookmarkedAt DESC);
       
-      CREATE INDEX IF NOT EXISTS idx_bookmarks_category 
-      ON bookmarks(category);
     `;
 
     await this.executeQuery(indexSql);
   }
 
-  async findAll(): Promise<BookmarkData[]> {
+  async findAll(): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks ORDER BY bookmarkedAt DESC'
     );
@@ -59,7 +55,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     });
   }
 
-  async findById(id: string): Promise<BookmarkData | null> {
+  async findById(id: string): Promise<Bookmark | null> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks WHERE id = ?',
       [id]
@@ -74,9 +70,9 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     };
   }
 
-  async create(data: Omit<BookmarkData, 'id'>): Promise<BookmarkData> {
+  async create(data: Omit<Bookmark, 'id'>): Promise<Bookmark> {
     const id = `${data.year}-${data.round}-${data.number}-${Date.now()}`;
-    const bookmark: BookmarkData = { id, ...data };
+    const bookmark: Bookmark = { id, ...data };
     
     await this.executeQuery(
       `INSERT INTO bookmarks (id, questionId, title, category, year, round, number, answer, note, tags, bookmarkedAt)
@@ -99,7 +95,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     return bookmark;
   }
 
-  async update(id: string, data: Partial<BookmarkData>): Promise<BookmarkData> {
+  async update(id: string, data: Partial<Bookmark>): Promise<Bookmark> {
     const existing = await this.findById(id);
     if (!existing) throw new Error('Bookmark not found');
     
@@ -135,7 +131,32 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     return result.rowsAffected > 0;
   }
 
-  async findByQuestionId(questionId: string): Promise<BookmarkData | null> {
+  async getBookmarks(limit: number=10, offset: number=0): Promise<Bookmark[]> {
+    const result = await this.executeQuery(
+        `
+          SELECT *
+          FROM bookmarks
+          ORDER BY bookmarkedAt DESC
+            LIMIT ? OFFSET ?
+        `,
+        [limit, offset]
+    );
+
+    return Array.from({ length: result.rows.length }, (_, i) => {
+      const row = result.rows.item(i);
+      return {
+        ...row,
+        tags: this.parseJsonField(row.tags)
+      };
+    });
+  }
+
+  async getBookmarksTotalCount(): Promise<number> {
+    const result = await this.executeQuery(`SELECT COUNT(*) as 'count' AS count FROM bookmarks`);
+    return result.rows.item(0).count;
+  }
+
+  async findByQuestionId(questionId: string): Promise<Bookmark | null> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks WHERE questionId = ?',
       [questionId]
@@ -150,7 +171,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     };
   }
 
-  async findByCategory(category: string): Promise<BookmarkData[]> {
+  async findByCategory(category: string): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks WHERE category = ? ORDER BY bookmarkedAt DESC',
       [category]
@@ -165,7 +186,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     });
   }
 
-  async findByYear(year: number): Promise<BookmarkData[]> {
+  async findByYear(year: number): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks WHERE year = ? ORDER BY round DESC, number ASC',
       [year]
@@ -180,7 +201,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     });
   }
 
-  async searchBookmarks(searchTerm: string): Promise<BookmarkData[]> {
+  async searchBookmarks(searchTerm: string): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks WHERE title LIKE ? OR note LIKE ? ORDER BY bookmarkedAt DESC',
       [`%${searchTerm}%`, `%${searchTerm}%`]
@@ -211,7 +232,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     return (result.rows.length === 0) ? 0 : result.rows.item(0).count;
   }
 
-  async getBookmarksByDate(date: string): Promise<BookmarkData[]> {
+  async getBookmarksByDate(date: string): Promise<Bookmark[]> {
     const result = await this.executeQuery(`
       SELECT * 
       FROM bookmarks 
@@ -237,7 +258,7 @@ export class BookmarkRepository extends BaseRepository<BookmarkData> {
     return result.rowsAffected > 0;
   }
 
-  async getAllBookmarks(): Promise<BookmarkData[]> {
+  async getAllBookmarks(): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks ORDER BY created_at DESC'
     );
