@@ -11,16 +11,13 @@ export class HomePageBridge extends BaseNativeBridge {
     }
 
     async handleMessage(type: string, data?: any): Promise<any> {
+        const homePageService = await this.serviceManager.getHomePageService();
+
         switch (type) {
             case 'GET_HOME_PAGE_DATA':
-                return await this.getHomePageData();
+                return  await homePageService.getHomePageData();
             default:
                 throw new Error(`Unsupported message type: ${type}`);
         }
-    }
-
-    private async getHomePageData() {
-        const homePageService = await this.serviceManager.getHomePageService();
-        return await homePageService.getHomePageData();
     }
 }

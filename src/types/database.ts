@@ -1,17 +1,18 @@
 // 데이터베이스 엔티티 타입들
 
-export interface BookmarkData {
+export interface Bookmark {
   id: string;
   questionId: string;
-  title: string;
-  category: string;
   year: number;
   round: number;
-  number: number;
-  answer?: string;
+  questionNumber: string;
+  questionText: string;
+  questionImageUrl?: string;
+  correctAnswer: number;
+  explanation?: string;
   note?: string;
-  tags: string[];
-  bookmarkedAt: string; // ISO string
+  tags?: string[];
+  bookmarkedAt: string;
 }
 
 export interface WrongAnswerRecord {

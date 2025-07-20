@@ -1,15 +1,6 @@
-// 서비스 레이어 DTO 및 응답 타입들
+import {Bookmark, StudyHistory} from './database';
 
-import { StudyHistory } from './database';
-
-export interface WrongAnswerStats {
-  totalWrongAnswers: number;
-  mostWrongCategory: string;
-  averageWrongCount: number;
-  recentWrongAnswers: number; // 최근 7일
-}
-
-// 홈페이지 데이터 통합 타입
+// 홈페이지 response dto
 export interface HomePageData {
   // 학습 진도
   totalSolved: number;
@@ -26,6 +17,12 @@ export interface HomePageData {
   todayBookmarks: number;
 }
 
+// 북마크 페이지 response dto
+export interface BookmarkData {
+  bookmarks: Bookmark[];
+  totalCount: number;
+}
+
 // 주간 학습 통계
 export interface WeeklyStats {
   weeklyStudyTime: number;
@@ -40,4 +37,12 @@ export interface MonthlyStats {
   monthlySolved: number;
   monthlyCorrect: number;
   monthlyAccuracy: number;
-} 
+}
+
+
+export interface WrongAnswerStats {
+  totalWrongAnswers: number;
+  mostWrongCategory: string;
+  averageWrongCount: number;
+  recentWrongAnswers: number; // 최근 7일
+}

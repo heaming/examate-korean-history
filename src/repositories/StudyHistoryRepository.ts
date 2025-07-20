@@ -2,8 +2,6 @@ import dayjs from 'dayjs';
 import { StudyHistory } from '../types/database';
 import { BaseRepository } from './BaseRepository';
 
-dayjs().locale('')
-
 export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   constructor() {
     super();
@@ -15,7 +13,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         questionId TEXT NOT NULL,
         solvedAt TEXT NOT NULL,
-        isCorrect INTEGER NOT NULL DEFAULT 0,
+        isCorrect INTEGER,
         userAnswer INTEGER DEFAULT 0,
         correctAnswer INTEGER NOT NULL,
         createdAt TEXT NOT NULL DEFAULT  (date('now'))

@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { StudyStatsRepository } from '../repositories/StudyStatsRepository';
 import { StudyHistory, StudyStats } from '../types/database';
-import { MonthlyStats, WeeklyStats } from '../types/service';
+import { MonthlyStats, WeeklyStats } from '../types/dto';
 
 export class StudyStatsService {
   private studyStatsRepository: StudyStatsRepository;
