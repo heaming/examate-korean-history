@@ -258,6 +258,81 @@ export class BookmarkRepository extends BaseRepository<Bookmark> {
     return result.rowsAffected > 0;
   }
 
+  async updateBookmark(id: string, bookmark: Partial<Bookmark>): Promise<void> {
+    const updateFields = [];
+    const values = [];
+
+    if (bookmark.questionId !== undefined) {
+      updateFields.push('questionId = ?');
+      values.push(bookmark.questionId);
+    }
+
+    if (bookmark.year !== undefined) {
+      updateFields.push('year = ?');
+      values.push(bookmark.year);
+    }
+
+    if (bookmark.round !== undefined) {
+      updateFields.push('round = ?');
+      values.push(bookmark.round);
+    }
+
+    if (bookmark.questionNumber !== undefined) {
+      updateFields.push('questionNumber = ?');
+      values.push(bookmark.questionNumber);
+    }
+
+    if (bookmark.questionText !== undefined) {
+      updateFields.push('questionText = ?');
+      values.push(bookmark.questionText);
+    }
+
+    if (bookmark.questionImageUrl !== undefined) {
+      updateFields.push('questionImageUrl = ?');
+      values.push(bookmark.questionImageUrl);
+    }
+
+    if (bookmark.correctAnswer !== undefined) {
+      updateFields.push('correctAnswer = ?');
+      values.push(bookmark.correctAnswer);
+    }
+
+    if (bookmark.explanation !== undefined) {
+      updateFields.push('explanation = ?');
+      values.push(bookmark.explanation);
+    }
+
+    if (bookmark.note !== undefined) {
+      updateFields.push('note = ?');
+      values.push(bookmark.note);
+    }
+
+    if (bookmark.tags !== undefined) {
+      updateFields.push('tags = ?');
+      values.push(JSON.stringify(bookmark.tags)); // 배열을 JSON 문자열로 변환
+    }
+
+    if (bookmark.bookmarkedAt !== undefined) {
+      updateFields.push('bookmarkedAt = ?');
+      values.push(bookmark.bookmarkedAt);
+    }
+
+    if (updateFields.length === 0) return;
+
+    // updatedAt 필드 추가 (필요하다면)
+    updateFields.push(`updatedAt = date('now')`);
+
+    const sql = `
+    UPDATE bookmarks 
+    SET ${updateFields.join(', ')}
+    WHERE id = ?
+  `;
+
+    values.push(id); // WHERE 절용 id 추가
+
+    await this.executeQuery(sql, values);
+  }
+
   async getAllBookmarks(): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmarks ORDER BY created_at DESC'
