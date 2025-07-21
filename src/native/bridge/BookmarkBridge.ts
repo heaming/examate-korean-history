@@ -29,6 +29,10 @@ export class BookmarkBridge extends BaseNativeBridge {
             case 'GET_BOOKMARKS':
                 const bookmarks = await bookmarkService.getBookmarks(data.limit, data.offset);
                 return bookmarks;
+
+            case 'UPDATE_BOOKMARK':
+                return await bookmarkService.updateBookmark(data.id, data.bookmark);
+
             default:
                 throw new Error(`Unknown bookmark message type: ${type}`);
         }

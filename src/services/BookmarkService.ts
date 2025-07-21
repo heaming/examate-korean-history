@@ -138,12 +138,12 @@ export class BookmarkService {
     }
   }
 
-  async updateBookmarkNote(id: string, note: string): Promise<Bookmark> {
+  async updateBookmark(id: string, bookmark: Partial<Bookmark>): Promise<void> {
     try {
-      return await this.bookmarkRepository.update(id, { note });
+      return await this.bookmarkRepository.updateBookmark(id, bookmark);
     } catch (error) {
-      console.error('Error updating bookmark note:', error);
-      throw new Error('북마크 노트 업데이트에 실패했습니다.');
+      console.error('Error updating bookmark:', error);
+      throw new Error('북마크 업데이트에 실패했습니다.');
     }
   }
 
