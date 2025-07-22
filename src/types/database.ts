@@ -1,7 +1,7 @@
 // 데이터베이스 엔티티 타입들
 
 export interface Bookmark {
-  id: string;
+  id: number;
   questionId: string;
   year: number;
   round: number;

@@ -9,7 +9,8 @@ export class BookmarkBridge extends BaseNativeBridge {
             'GET_BOOKMARK_DATA',
             'GET_BOOKMARKS',
             'SAVE_BOOKMARK',
-            'REMOVE_BOOKMARK'
+            'REMOVE_BOOKMARK',
+            'GET_BOOKMARKS_BY_YEAR_ROUND',
         ];
     }
 
@@ -32,6 +33,9 @@ export class BookmarkBridge extends BaseNativeBridge {
 
             case 'UPDATE_BOOKMARK':
                 return await bookmarkService.updateBookmark(data.id, data.bookmark);
+
+            case 'GET_BOOKMARKS_BY_YEAR_ROUND':
+                return await bookmarkService.getBookmarksByYearRound(data.year, data.round);
 
             default:
                 throw new Error(`Unknown bookmark message type: ${type}`);

@@ -103,25 +103,9 @@ export class BookmarkService {
     }
   }
 
-  async removeBookmark(id: string): Promise<boolean> {
+  async removeBookmark(questionId: string): Promise<boolean> {
     try {
-      const success = await this.bookmarkRepository.delete(id);
-      if (!success) {
-        throw new Error('북마크를 찾을 수 없습니다.');
-      }
-      return success;
-    } catch (error) {
-      console.error('Error removing bookmark:', error);
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('북마크 삭제에 실패했습니다.');
-    }
-  }
-
-  async removeBookmarkByQuestionId(questionId: string): Promise<boolean> {
-    try {
-      return await this.bookmarkRepository.deleteByQuestionId(questionId);
+      return await this.bookmarkRepository.delete(questionId);
     } catch (error) {
       console.error('Error removing bookmark by question id:', error);
       throw new Error('북마크 삭제에 실패했습니다.');
@@ -138,63 +122,21 @@ export class BookmarkService {
     }
   }
 
-  async updateBookmark(id: string, bookmark: Partial<Bookmark>): Promise<void> {
+  async updateBookmark(id: string, bookmark: Partial<Bookmark>): Promise<Bookmark | null> {
     try {
-      return await this.bookmarkRepository.updateBookmark(id, bookmark);
+      return await this.bookmarkRepository.update(id, bookmark);
     } catch (error) {
       console.error('Error updating bookmark:', error);
       throw new Error('북마크 업데이트에 실패했습니다.');
     }
   }
 
-  async getBookmarksByCategory(category: string): Promise<Bookmark[]> {
+  async getBookmarksByYearRound(year: number, round: number): Promise<{bookmarkId: number, questionId: string}[]> {
     try {
-      if (category === 'all') {
-        return await this.getAllBookmarks();
-      }
-      return await this.bookmarkRepository.findByCategory(category);
+      return await this.bookmarkRepository.getBookmarksByYearRound(year, round);
     } catch (error) {
-      console.error('Error getting bookmarks by category:', error);
-      throw new Error('카테고리별 북마크를 불러오는데 실패했습니다.');
-    }
-  }
-
-  async getBookmarksByYear(year: number): Promise<Bookmark[]> {
-    try {
-      return await this.bookmarkRepository.findByYear(year);
-    } catch (error) {
-      console.error('Error getting bookmarks by year:', error);
-      throw new Error('연도별 북마크를 불러오는데 실패했습니다.');
-    }
-  }
-
-  async searchBookmarks(searchTerm: string): Promise<Bookmark[]> {
-    try {
-      if (!searchTerm.trim()) {
-        return await this.getAllBookmarks();
-      }
-      return await this.bookmarkRepository.searchBookmarks(searchTerm);
-    } catch (error) {
-      console.error('Error searching bookmarks:', error);
-      throw new Error('북마크 검색에 실패했습니다.');
-    }
-  }
-
-  async getBookmarkTotalCount(): Promise<number> {
-    try {
-      return await this.bookmarkRepository.getBookmarkTotalCount();
-    } catch (error) {
-      console.error('Error getting bookmark count:', error);
-      return 0;
-    }
-  }
-
-  async getBookmarkCountByDate(date: string): Promise<number> {
-    try {
-      return await this.bookmarkRepository.getBookmarkCountByDate(date);
-    } catch (error) {
-      console.error('Error getting bookmark count:', error);
-      return 0;
+      console.error('Error getting bookmarks by year and round:', error);
+      throw new Error('북마크 조회에 실패했습니다.');
     }
   }
 
@@ -208,87 +150,138 @@ export class BookmarkService {
     }
   }
 
-  async getTodayBookmarks(): Promise<Bookmark[]> {
-    try {
-      const today = dayjs().format('YYYY-MM-DD');
-      
-      return await this.bookmarkRepository.getBookmarksByDate(today);
-    } catch (error) {
-      console.error('Error getting today bookmarks:', error);
-      return [];
-    }
-  }
+  // async getBookmarksByCategory(category: string): Promise<Bookmark[]> {
+  //   try {
+  //     if (category === 'all') {
+  //       return await this.getAllBookmarks();
+  //     }
+  //     return await this.bookmarkRepository.findByCategory(category);
+  //   } catch (error) {
+  //     console.error('Error getting bookmarks by category:', error);
+  //     throw new Error('카테고리별 북마크를 불러오는데 실패했습니다.');
+  //   }
+  // }
+  //
+  // async getBookmarksByYear(year: number): Promise<Bookmark[]> {
+  //   try {
+  //     return await this.bookmarkRepository.findByYear(year);
+  //   } catch (error) {
+  //     console.error('Error getting bookmarks by year:', error);
+  //     throw new Error('연도별 북마크를 불러오는데 실패했습니다.');
+  //   }
+  // }
+  //
+  // async searchBookmarks(searchTerm: string): Promise<Bookmark[]> {
+  //   try {
+  //     if (!searchTerm.trim()) {
+  //       return await this.getAllBookmarks();
+  //     }
+  //     return await this.bookmarkRepository.searchBookmarks(searchTerm);
+  //   } catch (error) {
+  //     console.error('Error searching bookmarks:', error);
+  //     throw new Error('북마크 검색에 실패했습니다.');
+  //   }
+  // }
+  //
+  // async getBookmarkTotalCount(): Promise<number> {
+  //   try {
+  //     return await this.bookmarkRepository.getBookmarkTotalCount();
+  //   } catch (error) {
+  //     console.error('Error getting bookmark count:', error);
+  //     return 0;
+  //   }
+  // }
+  //
+  // async getBookmarkCountByDate(date: string): Promise<number> {
+  //   try {
+  //     return await this.bookmarkRepository.getBookmarkCountByDate(date);
+  //   } catch (error) {
+  //     console.error('Error getting bookmark count:', error);
+  //     return 0;
+  //   }
+  // }
 
-  async getBookmarksByDate(date: string): Promise<Bookmark[]> {
-    try {
-      return await this.bookmarkRepository.getBookmarksByDate(date);
-    } catch (error) {
-      console.error('Error getting bookmarks by date range:', error);
-      throw new Error('날짜별 북마크를 불러오는데 실패했습니다.');
-    }
-  }
-
-  async toggleBookmark(questionData: {
-    questionId: string;
-    title: string;
-    category: string;
-    year: number;
-    round: number;
-    number: number;
-    answer?: string;
-    note?: string;
-    tags?: string[];
-  }): Promise<{ isBookmarked: boolean; bookmark?: Bookmark }> {
-    try {
-      const existingBookmark = await this.bookmarkRepository.findByQuestionId(questionData.questionId);
-      
-      if (existingBookmark) {
-        // 북마크 제거
-        await this.bookmarkRepository.delete(existingBookmark.id);
-        return { isBookmarked: false };
-      } else {
-        // 북마크 추가
-        const newBookmark = await this.addBookmark({
-          questionId: questionData.questionId,
-          title: questionData.title,
-          category: questionData.category,
-          year: questionData.year,
-          round: questionData.round,
-          number: questionData.number,
-          answer: questionData.answer,
-          note: questionData.note,
-          tags: questionData.tags || [],
-          bookmarkedAt: dayjs().format('YYYY-MM-DD'),
-        });
-        return { isBookmarked: true, bookmark: newBookmark };
-      }
-    } catch (error) {
-      console.error('Error toggling bookmark:', error);
-      throw new Error('북마크 토글에 실패했습니다.');
-    }
-  }
-
-  async getBookmarkCategories(): Promise<string[]> {
-    try {
-      const bookmarks = await this.getAllBookmarks();
-      const categories = [...new Set(bookmarks.map(b => b.category))];
-      return categories.sort();
-    } catch (error) {
-      console.error('Error getting bookmark categories:', error);
-      return [];
-    }
-  }
-
-  async getBookmarkYears(): Promise<number[]> {
-    try {
-      const bookmarks = await this.getAllBookmarks();
-      const years = [...new Set(bookmarks.map(b => b.year))];
-      return years.sort((a, b) => b - a); // 최신 연도부터
-    } catch (error) {
-      console.error('Error getting bookmark years:', error);
-      return [];
-    }
-  }
+  // async getTodayBookmarks(): Promise<Bookmark[]> {
+  //   try {
+  //     const today = dayjs().format('YYYY-MM-DD');
+  //
+  //     return await this.bookmarkRepository.getBookmarksByDate(today);
+  //   } catch (error) {
+  //     console.error('Error getting today bookmarks:', error);
+  //     return [];
+  //   }
+  // }
+  //
+  // async getBookmarksByDate(date: string): Promise<Bookmark[]> {
+  //   try {
+  //     return await this.bookmarkRepository.getBookmarksByDate(date);
+  //   } catch (error) {
+  //     console.error('Error getting bookmarks by date range:', error);
+  //     throw new Error('날짜별 북마크를 불러오는데 실패했습니다.');
+  //   }
+  // }
+  //
+  // async toggleBookmark(questionData: {
+  //   questionId: string;
+  //   title: string;
+  //   category: string;
+  //   year: number;
+  //   round: number;
+  //   number: number;
+  //   answer?: string;
+  //   note?: string;
+  //   tags?: string[];
+  // }): Promise<{ isBookmarked: boolean; bookmark?: Bookmark }> {
+  //   try {
+  //     const existingBookmark = await this.bookmarkRepository.findByQuestionId(questionData.questionId);
+  //
+  //     if (existingBookmark) {
+  //       // 북마크 제거
+  //       await this.bookmarkRepository.delete(existingBookmark.id);
+  //       return { isBookmarked: false };
+  //     } else {
+  //       // 북마크 추가
+  //       const newBookmark = await this.addBookmark({
+  //         questionId: questionData.questionId,
+  //         title: questionData.title,
+  //         category: questionData.category,
+  //         year: questionData.year,
+  //         round: questionData.round,
+  //         number: questionData.number,
+  //         answer: questionData.answer,
+  //         note: questionData.note,
+  //         tags: questionData.tags || [],
+  //         bookmarkedAt: dayjs().format('YYYY-MM-DD'),
+  //       });
+  //       return { isBookmarked: true, bookmark: newBookmark };
+  //     }
+  //   } catch (error) {
+  //     console.error('Error toggling bookmark:', error);
+  //     throw new Error('북마크 토글에 실패했습니다.');
+  //   }
+  // }
+  //
+  // async getBookmarkCategories(): Promise<string[]> {
+  //   try {
+  //     const bookmarks = await this.getAllBookmarks();
+  //     const categories = [...new Set(bookmarks.map(b => b.category))];
+  //     return categories.sort();
+  //   } catch (error) {
+  //     console.error('Error getting bookmark categories:', error);
+  //     return [];
+  //   }
+  // }
+  //
+  // async getBookmarkYears(): Promise<number[]> {
+  //   try {
+  //     const bookmarks = await this.getAllBookmarks();
+  //     const years = [...new Set(bookmarks.map(b => b.year))];
+  //     return years.sort((a, b) => b - a); // 최신 연도부터
+  //   } catch (error) {
+  //     console.error('Error getting bookmark years:', error);
+  //     return [];
+  //   }
+  // }
 
   async cleanup(): Promise<void> {
     try {

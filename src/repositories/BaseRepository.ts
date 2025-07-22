@@ -48,7 +48,7 @@ export abstract class BaseRepository<T> {
   abstract findAll(): Promise<T[]>;
   abstract findById(id: string | number): Promise<T | null>;
   abstract create(data: Omit<T, 'id'>): Promise<T>;
-  abstract update(id: string | number, data: Partial<T>): Promise<T>;
+  abstract update(id: string | number, data: Partial<T>): Promise<T | null>;
   abstract delete(id: string | number): Promise<boolean>;
 
   // 공통 유틸리티 메서드들
