@@ -45,6 +45,14 @@ export class StudyHistoryService {
   async getRecentQuestions(limit: number = 3): Promise<StudyHistory[]> {
     return await this.studyHistoryRepository.getRecentQuestions(limit);
   }
+
+  /**
+   * 문제 이력 저장
+   */
+  async addStudyHistories(studyHistories: Omit<StudyHistory, 'id'>[]) {
+    return await this.studyHistoryRepository.addStudyHistories(studyHistories);
+  }
+
   //
   // /**
   //  * 문제 풀이 결과 기록

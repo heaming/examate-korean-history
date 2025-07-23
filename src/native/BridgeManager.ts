@@ -3,7 +3,7 @@ import { HomePageBridge } from './bridge/HomePageBridge';
 import { BookmarkBridge } from './bridge/BookmarkBridge';
 import { StudyStatsBridge } from './bridge/StudyStatsBridge';
 import { WrongAnswerBridge } from './bridge/WrongAnswerBridge';
-import { ExamResultBridge } from './bridge/ExamResultBridge';
+import { StudyHistoryBridge } from './bridge/StudyHistoryBridge';
 
 export class BridgeManager {
     private static instance: BridgeManager;
@@ -24,7 +24,7 @@ export class BridgeManager {
             new BookmarkBridge(),
             new StudyStatsBridge(),
             new WrongAnswerBridge(),
-            new ExamResultBridge()
+            new StudyHistoryBridge()
         ];
 
         // 메시지 타입별 브릿지 매핑
