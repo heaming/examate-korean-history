@@ -80,11 +80,17 @@ export abstract class BaseRepository<T> {
     }
   }
 
-  protected booleanToInteger(value: boolean): number {
+  protected booleanToInteger(value?: boolean | null): number | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
     return value ? 1 : 0;
   }
 
-  protected integerToBoolean(value: number): boolean {
+  protected integerToBoolean(value?: number | null): boolean | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
     return value === 1;
   }
 

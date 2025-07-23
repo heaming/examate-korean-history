@@ -14,6 +14,13 @@ export class StudyHistoryService {
   }
 
   /**
+   * 학습 이력 저장 조회
+   */
+  async getStudyHistories(year: number, round: number) {
+    return await this.studyHistoryRepository.getStudyHistories(year, round);
+  }
+
+  /**
    * 전체 학습 이력 count 조회
    */
   async getStudyHistoryTotalCount(): Promise<{solvedCount: number, correctCount: number, accuracy: number}> {

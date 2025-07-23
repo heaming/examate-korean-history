@@ -12,6 +12,8 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
       CREATE TABLE IF NOT EXISTS study_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         questionId TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        round INTENGER NOT NULL,
         solvedAt TEXT NOT NULL,
         isCorrect INTEGER,
         userAnswer INTEGER DEFAULT 0,
@@ -22,22 +24,38 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     
     await this.executeQuery(sql);
 
-    const indexSql = `
+    const indexSql1 = `
       CREATE INDEX IF NOT EXISTS idx_study_history_solved_at 
       ON study_history(solvedAt DESC)
     `;
+
+    // year, round 복합 인덱스 (연도별/회차별 조회용)
+    const indexSql2 = `
+    CREATE INDEX IF NOT EXISTS idx_study_history_year_round 
+    ON study_history(year, round, solvedAt DESC)
+  `;
+
+    // questionId 인덱스 (특정 문제 풀이 이력 조회용)
+    const indexSql3 = `
+    CREATE INDEX IF NOT EXISTS idx_study_history_question_id 
+    ON study_history(questionId, solvedAt DESC)
+  `;
     
-    await this.executeQuery(indexSql);
+    await this.executeQuery(indexSql1);
+    await this.executeQuery(indexSql2);
+    await this.executeQuery(indexSql3);
   }
 
   async addStudyHistory(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     const sql = `
-      INSERT INTO study_history (questionId, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
+      INSERT INTO study_history (questionId, year, round, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
       VALUES (?, ?, ?, ?, ?, ?)
     `;
     
     const result = await this.executeQuery(sql, [
       data.questionId,
+      data.year,
+      data.round,
       data.solvedAt,
       this.booleanToInteger(data.isCorrect),
       data.userAnswer,
@@ -150,6 +168,37 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
       questions.push({
         id: row.id,
         questionId: row.questionId,
+        year: row.year,
+        round: row.round,
+        solvedAt: row.solvedAt,
+        isCorrect: this.integerToBoolean(row.isCorrect),
+        userAnswer: row.userAnswer,
+        correctAnswer: row.correctAnswer,
+        createdAt: row.createdAt
+      });
+    }
+
+    return questions;
+  }
+
+  async getStudyHistories(year: number, round: number): Promise<StudyHistory[]> {
+    const sql = `
+      SELECT *
+      FROM study_history
+      WHERE year = ?
+      AND round = ?
+    `;
+
+    const result = await this.executeQuery(sql, [year, round]);
+    const questions: StudyHistory[] = [];
+
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows.item(i);
+      questions.push({
+        id: row.id,
+        questionId: row.questionId,
+        year: row.year,
+        round: row.round,
         solvedAt: row.solvedAt,
         isCorrect: this.integerToBoolean(row.isCorrect),
         userAnswer: row.userAnswer,
@@ -176,6 +225,8 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
       questions.push({
         id: row.id,
         questionId: row.questionId,
+        year: row.year,
+        round: row.round,
         solvedAt: row.solvedAt,
         isCorrect: this.integerToBoolean(row.isCorrect),
         userAnswer: row.userAnswer,
@@ -220,9 +271,8 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     return streak;
   }
 
-  // BaseRepository 추상 메서드 구현
   async findAll(): Promise<StudyHistory[]> {
-    return await this.getRecentQuestions();
+    return await this.executeQuery('SELECT * FROM study_history');
   }
 
   async findById(id: string | number): Promise<StudyHistory | null> {
@@ -234,6 +284,8 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     const row = result.rows.item(0);
     return {
       id: row.id,
+      year: row.year,
+      round: row.round,
       questionId: row.questionId,
       solvedAt: row.solvedAt,
       isCorrect: this.integerToBoolean(row.isCorrect),

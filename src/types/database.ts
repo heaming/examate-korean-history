@@ -36,32 +36,12 @@ export interface StudyStats {
 
 export interface StudyHistory {
   id: number;
+  year: number;
+  round: number;
   questionId: string;
-  solvedAt: string;
-  isCorrect: boolean;
-  userAnswer: number;
+  solvedAt?: string;
+  isCorrect?: boolean | null;
+  userAnswer?: number;
   correctAnswer: number;
   createdAt: string;
 }
-
-export interface ExamResult {
-  id: string;
-  examType: string;
-  year: number;
-  round: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  score: number;
-  timeSpent: number; // 분 단위
-  completedAt: string; // ISO string
-  questionResults: QuestionResult[];
-}
-
-export interface QuestionResult {
-  questionId: string;
-  isCorrect: boolean;
-  userAnswer: number;
-  correctAnswer: number;
-  studyTime: number; // 초 단위
-  solvedAt: string; // ISO string
-} 

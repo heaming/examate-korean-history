@@ -16,14 +16,14 @@ export class StudyHistoryBridge extends BaseNativeBridge {
         const studyHistoryService = await this.serviceManager.getStudyHistoryService();
         switch (type) {
             case 'GET_STUDY_HISTORIES':
-                return [];
+                return await studyHistoryService.getStudyHistories(data.year, data.round);
 
             case 'SAVE_STUDY_HISTORIES':
                 return await studyHistoryService.addStudyHistories(data);
             //     return  await homePageService.getHomePageData();
 
             case 'SAVE_STUDY_HISTORY':
-                return { success: true };
+                // return await studyHistoryService.addStudyHistory(data);
 
             default:
                 throw new Error(`Unknown exam result message type: ${type}`);

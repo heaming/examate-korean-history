@@ -8,9 +8,9 @@ export class StudyStatsBridge extends BaseNativeBridge {
         return [
             'GET_STUDY_STATS',
             'UPDATE_STUDY_STATS',
-            'GET_TODAY_STATS',
-            'GET_RECENT_QUESTIONS',
-            'SAVE_QUESTION_RESULT'
+            // 'GET_TODAY_STATS',
+            // 'GET_RECENT_QUESTIONS',
+            // 'SAVE_QUESTION_RESULT'
         ];
     }
 
