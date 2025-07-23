@@ -30,7 +30,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     await this.executeQuery(indexSql);
   }
 
-  async addQuestion(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
+  async addStudyHistory(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     const sql = `
       INSERT INTO study_history (questionId, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
       VALUES (?, ?, ?, ?, ?, ?)
@@ -49,6 +49,26 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
       id: result.insertId,
       ...data
     };
+  }
+
+  async addStudyHistories(dataList: Omit<StudyHistory, 'id'>[]): Promise<StudyHistory[]> {
+    if (!dataList.length) return [];
+
+    try {
+      await this.executeQuery('BEGIN TRANSACTION');
+
+      const savedHistories = await Promise.all(
+          dataList.map(data => this.addStudyHistory(data))
+      );
+
+      await this.executeQuery('COMMIT');
+
+      return savedHistories;
+    } catch (error) {
+
+      await this.executeQuery('ROLLBACK');
+      throw error;
+    }
   }
 
   async getStudyHistoryTotalCount(): Promise<{solvedCount: number, correctCount: number}> {
@@ -224,7 +244,7 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   }
 
   async create(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
-    return await this.addQuestion(data);
+    return await this.addStudyHistory(data);
   }
 
   async update(id: string | number, data: Partial<StudyHistory>): Promise<StudyHistory> {
