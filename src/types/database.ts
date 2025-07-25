@@ -35,13 +35,13 @@ export interface StudyStats {
 }
 
 export interface StudyHistory {
-  id: number;
+  id?: number | null;
   year: number;
   round: number;
   questionId: string;
   solvedAt?: string;
   isCorrect?: boolean | null;
-  userAnswer?: number;
+  userAnswer?: number| null;
   correctAnswer: number;
-  createdAt: string;
+  createdAt?: string | null;
 }

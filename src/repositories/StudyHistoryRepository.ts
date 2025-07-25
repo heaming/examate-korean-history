@@ -49,9 +49,9 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   async addStudyHistory(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     const sql = `
       INSERT INTO study_history (questionId, year, round, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, (date('now')))
     `;
-    
+
     const result = await this.executeQuery(sql, [
       data.questionId,
       data.year,
@@ -60,7 +60,6 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
       this.booleanToInteger(data.isCorrect),
       data.userAnswer,
       data.correctAnswer,
-      data.createdAt
     ]);
     
     return {
@@ -184,9 +183,17 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
   async getStudyHistories(year: number, round: number): Promise<StudyHistory[]> {
     const sql = `
       SELECT *
-      FROM study_history
-      WHERE year = ?
-      AND round = ?
+      FROM (
+             SELECT *,
+                    ROW_NUMBER() OVER (
+               PARTITION BY questionId
+               ORDER BY createdAt DESC
+             ) as rn
+             FROM study_history
+             WHERE year = ?
+               AND round = ?
+           ) sub
+      WHERE rn = 1
     `;
 
     const result = await this.executeQuery(sql, [year, round]);
