@@ -1,9 +1,102 @@
 import dayjs from 'dayjs';
-import { WrongAnswerRecord, WrongAnswerStats } from '../types';
+import {OrderType, StudyHistory, WrongAnswer, WrongAnswerStats} from '../types';
 import { BaseRepository } from './BaseRepository';
 
-export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
-  async findAll(): Promise<WrongAnswerRecord[]> {
+export class WrongAnswerRepository extends BaseRepository<WrongAnswer> {
+  async initializeTable(): Promise<void> {
+    const sql = `
+      CREATE TABLE IF NOT EXISTS wrong_answer (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        questionId TEXT NOT NULL,
+        lastWrongAt TEXT NOT NULL,
+        wrongCount INTEGER DEFAULT 1,
+        tags TEXT,
+        userAnswer INTEGER,
+        correctAnswer INTEGER NOT NULL,
+        note TEXT,
+        isBookmarked INTEGER
+        createdAt TEXT NOT NULL DEFAULT  (date('now'))
+      )
+    `;
+
+    await this.executeQuery(sql);
+
+    const indexSql1 = `
+      CREATE INDEX IF NOT EXISTS idx_wrong_asnwer_last_wrong_at
+      ON wrong_answer(lastWrongAt DESC)
+    `;
+
+    // year, round 복합 인덱스 (연도별/회차별 조회용)
+    const indexSql2 = `
+    CREATE INDEX IF NOT EXISTS idx_wrong_answer_wrong_count
+    ON wrong_answer(wrong_count DESC)
+    `;
+
+    await this.executeQuery(indexSql1);
+    await this.executeQuery(indexSql2);
+  }
+
+  async getWrongAnswers(tags = [], limit: number=10, offset: number=0, orderType: OrderType): Promise<StudyHistory[]> {
+    let dynamicOrderBy = "";
+    switch (orderType) {
+      case "SOLVED_AT":
+        dynamicOrderBy = `\nORDER BY wrongCount DESC`;
+        break;
+      case "RECENTLY":
+      default:
+        dynamicOrderBy = `\nORDER BY solvedAt DESC`;
+        break;
+    }
+
+    const sql = `
+      WITH latest_wrong AS (
+        SELECT DISTINCT questionId
+        FROM study_history
+        WHERE (questionId, solvedAt) IN (
+          SELECT questionId, MAX(solvedAt)
+          FROM study_history
+          GROUP BY questionId
+        )
+          AND isCorrect = 0
+      )
+      SELECT
+        s.*,
+        CASE WHEN b.questionId IS NOT NULL THEN 1 ELSE 0 END as isBookmarked,
+        COALESCE(w.wrongCount, 1) as wrongCount,
+        w.lastWrongAt
+      FROM study_history s
+             JOIN latest_wrong lw ON s.questionId = lw.questionId
+             LEFT JOIN bookmark b ON s.questionId = b.questionId
+             LEFT JOIN wrong_answers w ON s.questionId = w.questionId
+      WHERE (s.questionId, s.solvedAt) IN (
+        SELECT questionId, MAX(solvedAt)
+        FROM study_history
+        GROUP BY questionId
+      )
+      ${dynamicOrderBy}
+      LIMIT ? OFFSET ?
+    `;
+    const result = await this.executeQuery(sql, [limit, offset]);
+    const questions: StudyHistory[] = [];
+
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows.item(i);
+      questions.push({
+        id: row.id,
+        questionId: row.questionId,
+        year: row.year,
+        round: row.round,
+        solvedAt: row.solvedAt,
+        isBookmarked: row.isBookmarked,
+        isCorrect: this.integerToBoolean(row.isCorrect),
+        userAnswer: row.userAnswer,
+        correctAnswer: row.correctAnswer,
+        createdAt: row.createdAt
+      });
+    }
+  }
+
+  async findAll(): Promise<WrongAnswer[]> {
     const result = await this.executeQuery(
       'SELECT * FROM wrong_answers ORDER BY lastWrongAt DESC'
     );
@@ -17,7 +110,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     });
   }
 
-  async findById(questionId: string): Promise<WrongAnswerRecord | null> {
+  async findById(questionId: string): Promise<WrongAnswer | null> {
     const result = await this.executeQuery(
       'SELECT * FROM wrong_answers WHERE questionId = ?',
       [questionId]
@@ -32,8 +125,8 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     };
   }
 
-  async create(data: Omit<WrongAnswerRecord, 'id'>): Promise<WrongAnswerRecord> {
-    const wrongAnswer: WrongAnswerRecord = {
+  async create(data: Omit<WrongAnswer, 'id'>): Promise<WrongAnswer> {
+    const wrongAnswer: WrongAnswer = {
       questionId: data.questionId,
       wrongCount: data.wrongCount || 1,
       lastWrongAt: data.lastWrongAt,
@@ -60,7 +153,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     return wrongAnswer;
   }
 
-  async update(questionId: string, data: Partial<WrongAnswerRecord>): Promise<WrongAnswerRecord> {
+  async update(questionId: string, data: Partial<WrongAnswer>): Promise<WrongAnswer> {
     const existing = await this.findById(questionId);
     if (!existing) throw new Error('Wrong answer record not found');
     
@@ -93,7 +186,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
   }
 
   // 추가 메서드들
-  async incrementWrongCount(questionId: string, userAnswer: number, correctAnswer: number): Promise<WrongAnswerRecord> {
+  async incrementWrongCount(questionId: string, userAnswer: number, correctAnswer: number): Promise<WrongAnswer> {
     const existing = await this.findById(questionId);
     
     if (existing) {
@@ -117,14 +210,14 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     }
   }
 
-  async updateNote(questionId: string, note: string): Promise<WrongAnswerRecord> {
+  async updateNote(questionId: string, note: string): Promise<WrongAnswer> {
     const existing = await this.findById(questionId);
     if (!existing) throw new Error('Wrong answer record not found');
     
     return await this.update(questionId, { note });
   }
 
-  async toggleBookmark(questionId: string): Promise<WrongAnswerRecord> {
+  async toggleBookmark(questionId: string): Promise<WrongAnswer> {
     const existing = await this.findById(questionId);
     if (!existing) throw new Error('Wrong answer record not found');
     
@@ -170,7 +263,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     };
   }
 
-  async getWrongAnswersByCount(minCount: number): Promise<WrongAnswerRecord[]> {
+  async getWrongAnswersByCount(minCount: number): Promise<WrongAnswer[]> {
     const result = await this.executeQuery(
       'SELECT * FROM wrong_answers WHERE wrongCount >= ? ORDER BY wrongCount DESC, lastWrongAt DESC',
       [minCount]
@@ -185,7 +278,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     });
   }
 
-  async getBookmarkedWrongAnswers(): Promise<WrongAnswerRecord[]> {
+  async getBookmarkedWrongAnswers(): Promise<WrongAnswer[]> {
     const result = await this.executeQuery(
       'SELECT * FROM wrong_answers WHERE isBookmarked = 1 ORDER BY lastWrongAt DESC'
     );
@@ -199,7 +292,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     });
   }
 
-  async getWrongAnswersByDateRange(startDate: string, endDate: string): Promise<WrongAnswerRecord[]> {
+  async getWrongAnswersByDateRange(startDate: string, endDate: string): Promise<WrongAnswer[]> {
     const result = await this.executeQuery(
       'SELECT * FROM wrong_answers WHERE lastWrongAt BETWEEN ? AND ? ORDER BY lastWrongAt DESC',
       [startDate, endDate]
@@ -214,7 +307,7 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswerRecord> {
     });
   }
 
-  async searchWrongAnswers(searchTerm: string): Promise<WrongAnswerRecord[]> {
+  async searchWrongAnswers(searchTerm: string): Promise<WrongAnswer[]> {
     const result = await this.executeQuery(
       'SELECT * FROM wrong_answers WHERE note LIKE ? ORDER BY lastWrongAt DESC',
       [`%${searchTerm}%`]

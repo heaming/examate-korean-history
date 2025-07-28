@@ -16,13 +16,13 @@ export class WrongAnswerBridge extends BaseNativeBridge {
     }
 
     async handleMessage(type: string, data?: any): Promise<any> {
-        // WrongAnswerService 구현 후 연결
+        const wrongAnswerService =  await this.serviceManager.getWrongAnswerService();
         switch (type) {
             case 'SAVE_WRONG_ANSWER':
                 return { success: true };
 
-            case 'GET_WRONG_ANSWERS':
-                return [];
+            case 'GET_WRONG_ANSWERS': // 오답
+                return await studyHistoryService.getWrongAnswers(data.year, data.round, data.tags);
 
             case 'GET_WRONG_ANSWER_STATS':
                 return {

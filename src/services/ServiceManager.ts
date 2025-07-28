@@ -2,6 +2,7 @@ import { BookmarkService } from './BookmarkService';
 import { HomePageService } from './HomePageService';
 import { StudyStatsService } from './StudyStatsService';
 import {StudyHistoryService} from "@/src/services/StudyHistoryService";
+import {WrongAnswerService} from "@/src/services/WrongAnswerService";
 
 class ServiceManager {
   private static instance: ServiceManager;
@@ -11,6 +12,7 @@ class ServiceManager {
   private studyHistoryService: StudyHistoryService | null = null;
   private bookmarkService: BookmarkService | null = null;
   private homePageService: HomePageService | null = null;
+  private wrongAnswerService: WrongAnswerService | null = null;
 
   // 초기화 상태 추적
   private initializationPromises: Map<string, Promise<any>> = new Map();
@@ -102,6 +104,31 @@ class ServiceManager {
   }
 
   /**
+   * WrongAnswerService 인스턴스 반환 (지연 초기화)
+   */
+  async getWrongAnswerService(): Promise<WrongAnswerService> {
+    if (this.wrongAnswerService) {
+      return this.wrongAnswerService;
+    }
+
+    const initKey = 'wrongAnswerService';
+    if (this.initializationPromises.has(initKey)) {
+      await this.initializationPromises.get(initKey);
+      return this.wrongAnswerService!;
+    }
+
+    const initPromise = this.initializeWrongAnswerService();
+    this.initializationPromises.set(initKey, initPromise);
+
+    try {
+      await initPromise;
+      return this.wrongAnswerService!;
+    } finally {
+      this.initializationPromises.delete(initKey);
+    }
+  }
+
+  /**
    * HomePageService 인스턴스 반환 (지연 초기화)
    */
   async getHomePageService(): Promise<HomePageService> {
@@ -125,6 +152,7 @@ class ServiceManager {
       this.initializationPromises.delete(initKey);
     }
   }
+
 
   /**
    * StudyStatsService 초기화
@@ -155,6 +183,19 @@ class ServiceManager {
     this.bookmarkService = new BookmarkService();
     await this.bookmarkService.initialize();
     console.log('BookmarkService initialized');
+  }
+
+  /**
+   * WrongAnswerService 초기화
+   */
+  private async initializeWrongAnswerService(): Promise<void> {
+    console.log('Initializing WrongAnswerService...');
+
+    const bookmarkService = await this.getBookmarkService();
+    this.wrongAnswerService = new WrongAnswerService(bookmarkService);
+    await this.wrongAnswerService.initialize();
+
+    console.log('WrongAnswerService initialized');
   }
 
   /**
@@ -203,6 +244,10 @@ class ServiceManager {
 
       if (this.homePageService) {
         cleanupPromises.push(this.homePageService.cleanup());
+      }
+
+      if (this.wrongAnswerService) {
+        cleanupPromises.push(this.wrongAnswerService.cleanup());
       }
 
       if (this.studyStatsService) {

@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { StudyHistoryRepository } from '../repositories/StudyHistoryRepository';
-import { StudyHistory } from '../types/database';
+import {OrderType, StudyHistory} from '../types/database';
 
 export class StudyHistoryService {
   private studyHistoryRepository: StudyHistoryRepository;
@@ -58,6 +58,13 @@ export class StudyHistoryService {
    */
   async addStudyHistories(studyHistories: Omit<StudyHistory, 'id'>[]) {
     return await this.studyHistoryRepository.addStudyHistories(studyHistories);
+  }
+
+  /**
+   * 오답 문제 조회
+   */
+  async getWrongAnswers(tags = [], limit: number=10, offset: number=0, orderType: OrderType = 'SOLVED_AT') {
+    return await this.studyHistoryRepository.getWrongAnswers(tags, limit, offset, orderType);
   }
 
   //

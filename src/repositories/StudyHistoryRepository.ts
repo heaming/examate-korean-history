@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { StudyHistory } from '../types/database';
+import {OrderType, StudyHistory} from '../types/database';
 import { BaseRepository } from './BaseRepository';
 
 export class StudyHistoryRepository extends BaseRepository<StudyHistory> {

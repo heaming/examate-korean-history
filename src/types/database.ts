@@ -15,14 +15,17 @@ export interface Bookmark {
   bookmarkedAt: string;
 }
 
-export interface WrongAnswerRecord {
+export interface WrongAnswer {
+  id?: number | null;
   questionId: string;
+  lastWrongAt: string;
   wrongCount: number;
-  lastWrongAt: string; // ISO string
-  note?: string;
-  isBookmarked: boolean;
-  userAnswer: number;
+  tags?: string[]
+  userAnswer?: number| null;
   correctAnswer: number;
+  note?: string;
+  isBookmarked?: boolean | null;
+  createdAt?: string | null;
 }
 
 export interface StudyStats {
@@ -45,3 +48,5 @@ export interface StudyHistory {
   correctAnswer: number;
   createdAt?: string | null;
 }
+
+export type OrderType = 'RECENTLY' | 'SOLVED_AT'
