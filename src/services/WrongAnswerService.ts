@@ -2,12 +2,12 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ko'
 import {WrongAnswerRepository} from "@/src/repositories/WrongAnswerRepository";
 import {BookmarkService} from "@/src/services/BookmarkService";
-import {Bookmark, BookmarkData} from "@/src/types";
+import {Bookmark, BookmarkData, OrderType, WrongAnswer} from "@/src/types";
 dayjs.locale('ko')
 
 export class WrongAnswerService {
   private wrongAnswerRepository: WrongAnswerRepository;
-  private bookmarkService: BookmarkService; // BookmarkRepository 대신 BookmarkService 사용
+  private bookmarkService: BookmarkService;
   private isInitialized: boolean = false;
 
   constructor(bookmarkService: BookmarkService) {
@@ -26,6 +26,15 @@ export class WrongAnswerService {
     } catch (error) {
       console.error('Failed to initialize WrongAnswerService:', error);
       throw error;
+    }
+  }
+
+  async getWrongAnswers(tags: string[] = [], limit:number = 10, offset:number = 0, orderType: OrderType = 'RECENTLY'): Promise<WrongAnswer[]> {
+    try {
+      return await this.wrongAnswerRepository.getWrongAnswers(tags, limit, offset, orderType);
+    } catch (error) {
+      console.error('Error getting bookmarks:', error);
+      return [];
     }
   }
 

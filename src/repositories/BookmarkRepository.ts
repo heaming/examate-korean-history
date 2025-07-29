@@ -319,20 +319,9 @@ export class BookmarkRepository extends BaseRepository<Bookmark> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmark ORDER BY created_at DESC'
     );
-    
-    console.log('=== 북마크 조회 결과 ===');
-    console.log('총 북마크 수:', result.rows?.length || 0);
+
     
     const bookmarks = result.rows?._array || [];
-    bookmarks.forEach((bookmark: any, index: number) => {
-      console.log(`북마크 ${index + 1}:`, {
-        id: bookmark.id,
-        questionId: bookmark.question_id,
-        title: bookmark.title?.substring(0, 50) + '...',
-        createdAt: bookmark.created_at
-      });
-    });
-    
     return bookmarks.map((row: any) => ({
       id: row.id,
       questionId: row.question_id,

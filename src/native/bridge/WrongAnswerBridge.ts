@@ -22,7 +22,7 @@ export class WrongAnswerBridge extends BaseNativeBridge {
                 return { success: true };
 
             case 'GET_WRONG_ANSWERS': // 오답
-                return await studyHistoryService.getWrongAnswers(data.year, data.round, data.tags);
+                return await wrongAnswerService.getWrongAnswers(data.tags, data.limit, data.offset, data.orderType);
 
             case 'GET_WRONG_ANSWER_STATS':
                 return {

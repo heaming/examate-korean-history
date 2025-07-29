@@ -49,4 +49,4 @@ export interface StudyHistory {
   createdAt?: string | null;
 }
 
-export type OrderType = 'RECENTLY' | 'SOLVED_AT'
+export type OrderType = 'RECENTLY' | 'WRONG_COUNT'
