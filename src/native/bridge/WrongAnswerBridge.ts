@@ -6,11 +6,8 @@ export class WrongAnswerBridge extends BaseNativeBridge {
 
     getSupportedMessageTypes(): string[] {
         return [
-            'SAVE_WRONG_ANSWER',
             'GET_WRONG_ANSWERS',
-            'GET_WRONG_ANSWER_STATS',
-            'UPDATE_WRONG_ANSWER_NOTE',
-            'TOGGLE_WRONG_ANSWER_BOOKMARK',
+            'SAVE_WRONG_ANSWERS',
             'REMOVE_WRONG_ANSWER'
         ];
     }
@@ -18,28 +15,12 @@ export class WrongAnswerBridge extends BaseNativeBridge {
     async handleMessage(type: string, data?: any): Promise<any> {
         const wrongAnswerService =  await this.serviceManager.getWrongAnswerService();
         switch (type) {
-            case 'SAVE_WRONG_ANSWER':
-                return { success: true };
-
-            case 'GET_WRONG_ANSWERS': // 오답
+            case 'GET_WRONG_ANSWERS':
                 return await wrongAnswerService.getWrongAnswers(data.tags, data.limit, data.offset, data.orderType);
 
-            case 'GET_WRONG_ANSWER_STATS':
-                return {
-                    totalWrongAnswers: 0,
-                    mostWrongCategory: '',
-                    averageWrongCount: 0,
-                    recentWrongAnswers: 0
-                };
+            case 'SAVE_WRONG_ANSWERS':
+                return await wrongAnswerService.upsertWrongAnswers(data);
 
-            case 'UPDATE_WRONG_ANSWER_NOTE':
-                return { success: true };
-
-            case 'TOGGLE_WRONG_ANSWER_BOOKMARK':
-                return { success: true };
-
-            case 'REMOVE_WRONG_ANSWER':
-                return { success: true };
 
             default:
                 throw new Error(`Unknown wrong answer message type: ${type}`);
