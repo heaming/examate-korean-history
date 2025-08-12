@@ -6,21 +6,23 @@ export class WrongAnswerBridge extends BaseNativeBridge {
 
     getSupportedMessageTypes(): string[] {
         return [
+            'SAVE_WRONG_ANSWER',
             'GET_WRONG_ANSWERS',
-            'SAVE_WRONG_ANSWERS',
-            'REMOVE_WRONG_ANSWER'
+            'SAVE_WRONG_ANSWERS'
         ];
     }
 
     async handleMessage(type: string, data?: any): Promise<any> {
         const wrongAnswerService =  await this.serviceManager.getWrongAnswerService();
         switch (type) {
-            case 'GET_WRONG_ANSWERS':
-                return await wrongAnswerService.getWrongAnswers(data.tags, data.limit, data.offset, data.orderType);
+            case 'SAVE_WRONG_ANSWER':
+                return { success: true };
 
             case 'SAVE_WRONG_ANSWERS':
                 return await wrongAnswerService.upsertWrongAnswers(data);
 
+            case 'GET_WRONG_ANSWERS':
+                return await wrongAnswerService.getWrongAnswers(data.tags, data.limit, data.offset, data.orderType);
 
             default:
                 throw new Error(`Unknown wrong answer message type: ${type}`);

@@ -3,7 +3,6 @@ import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { DatabaseAdapter } from '../src/database/DatabaseAdapter';
-import { WebDatabaseDebugger } from '../src/debug/WebDatabaseDebugger';
 import { BridgeManager } from '../src/native/BridgeManager';
 
 export default function HomeScreen() {
@@ -22,12 +21,6 @@ export default function HomeScreen() {
       await DatabaseAdapter.getInstance().initialize();
       console.log('Database initialized successfully');
       setIsDbReady(true);
-
-      // 개발 환경에서 데이터베이스 디버깅 도구 활성화
-      if (process.env.NODE_ENV === 'development') {
-        const dbDebugger = new WebDatabaseDebugger();
-        dbDebugger.setupGlobalDebugFunctions();
-      }
 
       console.log('Creating BridgeManager...');
       const manager = BridgeManager.getInstance();
@@ -77,21 +70,6 @@ export default function HomeScreen() {
       }
     }
   };
-
-  // 웹 플랫폼에서는 iframe 사용, 모바일에서는 WebView 사용
-  if (Platform.OS === 'web') {
-    return (
-        <iframe
-            src="http://localhost:3000"
-            style={{
-              width: '100%',
-              height: '100vh',
-              border: 'none',
-            }}
-            title="Web Content"
-        />
-    );
-  }
 
   // Android 에뮬레이터에서는 10.0.2.2가 호스트 PC의 localhost를 가리킴
   // Expo 환경에서는 실제 PC IP 주소 사용

@@ -168,14 +168,12 @@ export class DatabaseManager {
     }
   }
 
-  // expo-sqlite용 SQL 실행 메서드
   private async executeSql(sql: string, params: any[] = []): Promise<any> {
     if (!this.db) throw new Error('Database not opened');
 
     try {
       console.log('Executing SQL:', sql.substring(0, 100) + '...');
-      
-      // expo-sqlite의 runAsync 방식 사용
+
       const result = await this.db.runAsync(sql, params);
       
       console.log('SQL executed successfully');
@@ -202,7 +200,6 @@ export class DatabaseManager {
     }
   }
 
-  // 데이터베이스 리셋 (개발/테스트용)
   async resetDatabase(): Promise<void> {
     if (!this.db) return;
 

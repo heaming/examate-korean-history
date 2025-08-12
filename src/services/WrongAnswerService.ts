@@ -39,12 +39,9 @@ export class WrongAnswerService {
   }
 
   async upsertWrongAnswers(dataList: Omit<WrongAnswer, 'id'>[]): Promise<void> {
-    try {
       return await this.wrongAnswerRepository.upsertWrongAnswers(dataList);
-    } catch (error) {
-      console.error('Error upserting WrongAnswers', error);
-    }
   }
+
 
   async cleanup(): Promise<void> {
     try {

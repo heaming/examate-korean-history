@@ -156,13 +156,13 @@ export class WrongAnswerRepository extends BaseRepository<WrongAnswer> {
         const mergedData = existing ? {
           questionId: data.questionId,
           lastWrongAt: data.lastWrongAt || now,
-          wrongCount: existing.wrongCount + 1, // 기존 카운트 + 1
-          tags: data.tags !== undefined ? data.tags : existing.tags, // data에 있으면 새 값, 없으면 기존 값
-          userAnswer: data.userAnswer !== undefined ? data.userAnswer : existing.userAnswer,
-          correctAnswer: data.correctAnswer, // correctAnswer는 항상 새 값 (필수)
+          wrongCount: existing.wrongCount + 1,
+          tags: data.tags !== undefined ? data.tags : existing.tags,
+          userAnswer: data.userAnswer || existing.userAnswer,
+          correctAnswer: data.correctAnswer || existing.correctAnswer,
           note: data.note !== undefined ? data.note : existing.note,
-          isBookmarked: data.isBookmarked !== undefined ? data.isBookmarked : existing.isBookmarked,
-          createdAt: existing.createdAt // 생성일은 기존 값 유지
+          isBookmarked: data.isBookmarked || existing.isBookmarked,
+          createdAt: existing.createdAt
         } : {
           // 새 데이터인 경우
           questionId: data.questionId,
