@@ -28,6 +28,12 @@ export class DatabaseManager {
     }
   }
 
+  async initializeSchema(): Promise<void> {
+    await this.createTables();
+    await this.createIndexes();
+    await this.initializeStats();
+  }
+
   private async openDatabase(): Promise<void> {
     try {
       console.log('Opening database...');
@@ -42,58 +48,70 @@ export class DatabaseManager {
   private async createTables(): Promise<void> {
     if (!this.db) throw new Error('Database not opened');
 
-    // 테이블을 하나씩 생성하여 어떤 테이블에서 문제가 발생하는지 확인
     const tables = [
       {
-        name: 'bookmarks',
-        sql: `CREATE TABLE IF NOT EXISTS bookmarks (
-          id TEXT PRIMARY KEY,
-          questionId TEXT NOT NULL,
-          title TEXT NOT NULL,
-          category TEXT NOT NULL,
-          year INTEGER NOT NULL,
-          round INTEGER NOT NULL,
-          number INTEGER NOT NULL,
-          answer TEXT,
-          note TEXT,
-          tags TEXT,
-          bookmarkedAt TEXT NOT NULL
-        )`
+        name: 'bookmark',
+        sql: `
+          CREATE TABLE IF NOT EXISTS bookmark (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            questionId TEXT NOT NULL UNIQUE,
+            year INTEGER,
+            round INTEGER,
+            questionNumber TEXT NOT NULL,
+            questionText TEXT NOT NULL,
+            questionImageUrl TEXT,
+            correctAnswer INTEGER NOT NULL,
+            explanation TEXT,
+            note TEXT,
+            tags TEXT,
+            bookmarkedAt TEXT NOT NULL
+          )
+        `
       },
       {
-        name: 'wrong_answers',
-        sql: `CREATE TABLE IF NOT EXISTS wrong_answers (
-          questionId TEXT PRIMARY KEY,
-          wrongCount INTEGER NOT NULL DEFAULT 1,
-          lastWrongAt TEXT NOT NULL,
-          note TEXT,
-          isBookmarked INTEGER DEFAULT 0,
-          userAnswer INTEGER NOT NULL,
-          correctAnswer INTEGER NOT NULL
-        )`
+        name: 'wrong_answer',
+        sql: `
+          CREATE TABLE IF NOT EXISTS wrong_answer (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              questionId TEXT NOT NULL,
+              lastWrongAt TEXT NOT NULL,
+              wrongCount INTEGER NOT NULL DEFAULT 1,
+              tags TEXT,
+              userAnswer INTEGER,
+              correctAnswer INTEGER NOT NULL,
+              note TEXT,
+              createdAt TEXT NOT NULL DEFAULT (date('now'))
+            )
+        `
       },
       {
         name: 'study_stats',
-        sql: `CREATE TABLE IF NOT EXISTS study_stats (
-          id INTEGER PRIMARY KEY,
-          totalSolved INTEGER DEFAULT 0,
-          totalCorrect INTEGER DEFAULT 0,
-          totalStudyTime INTEGER DEFAULT 0,
-          studyStreak INTEGER DEFAULT 0,
-          lastStudyDate TEXT
-        )`
+        sql: `
+          CREATE TABLE IF NOT EXISTS study_stats (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            studyStreak INTEGER NOT NULL DEFAULT 0,
+            lastStudyDate TEXT,
+            totalStudyTime INTEGER NOT NULL DEFAULT 0,
+            createdAt TEXT NOT NULL DEFAULT (date('now')),
+            updatedAt TEXT NOT NULL DEFAULT (date('now'))
+            )
+        `
       },
       {
-        name: 'recent_questions',
-        sql: `CREATE TABLE IF NOT EXISTS recent_questions (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          questionId TEXT NOT NULL,
-          solvedAt TEXT NOT NULL,
-          isCorrect INTEGER NOT NULL,
-          studyTime INTEGER NOT NULL,
-          userAnswer INTEGER NOT NULL,
-          correctAnswer INTEGER NOT NULL
-        )`
+        name: 'study_history',
+        sql: `
+          CREATE TABLE IF NOT EXISTS study_history (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              questionId TEXT NOT NULL,
+              year INTEGER NOT NULL,
+              round INTEGER NOT NULL,
+              solvedAt TEXT NOT NULL,
+              isCorrect INTEGER,
+              userAnswer INTEGER DEFAULT 0,
+              correctAnswer INTEGER NOT NULL,
+              createdAt TEXT NOT NULL DEFAULT (date('now'))
+            )
+        `
       }
     ];
 
@@ -104,23 +122,8 @@ export class DatabaseManager {
         console.log(`Table ${table.name} created successfully`);
       } catch (error) {
         console.error(`Error creating table ${table.name}:`, error);
-        // 테이블 생성 실패해도 계속 진행
         continue;
       }
-    }
-
-    // 초기 통계 데이터 삽입
-    try {
-      await this.initializeStats();
-    } catch (error) {
-      console.error('Error initializing stats:', error);
-    }
-    
-    // 인덱스 생성
-    try {
-      await this.createIndexes();
-    } catch (error) {
-      console.error('Error creating indexes:', error);
     }
   }
 
@@ -128,21 +131,14 @@ export class DatabaseManager {
     if (!this.db) return;
 
     try {
-      const result = await this.executeSql('SELECT COUNT(*) as count FROM study_stats');
-      
-      // expo-sqlite의 결과 구조에 맞게 수정
-      let count = 0;
-      if (result.rows && result.rows.length > 0) {
-        count = result.rows[0].count;
-      }
-      
-      console.log('Current stats count:', count);
-      
-      if (count === 0) {
-        await this.executeSql(
-          'INSERT OR IGNORE INTO study_stats (id, totalSolved, totalCorrect, totalStudyTime, studyStreak) VALUES (1, 0, 0, 0, 0)'
-        );
-        console.log('Initial stats created');
+      const res = await this.executeSql(`SELECT COUNT(*) AS count FROM study_stats WHERE id = 1`);
+      const exists = res.rows?.[0]?.count === 1;
+      if (!exists) {
+        await this.executeSql(`
+        INSERT OR IGNORE INTO study_stats
+          (id, studyStreak, lastStudyDate, totalStudyTime, createdAt, updatedAt)
+        VALUES (1, 0, '', 0, date('now'), date('now'))
+      `);
       }
     } catch (error) {
       console.error('Error initializing stats:', error);
@@ -153,10 +149,18 @@ export class DatabaseManager {
     if (!this.db) return;
 
     const indexes = [
-      'CREATE INDEX IF NOT EXISTS idx_bookmarks_questionId ON bookmarks(questionId)',
-      'CREATE INDEX IF NOT EXISTS idx_wrong_answers_lastWrongAt ON wrong_answers(lastWrongAt)',
-      'CREATE INDEX IF NOT EXISTS idx_recent_questions_solvedAt ON recent_questions(solvedAt)'
-      // exam_results, exam_question_results 테이블은 아직 생성되지 않았으므로 제거
+      // bookmark
+      `CREATE INDEX IF NOT EXISTS idx_bookmark_question_id ON bookmark(questionId)`,
+      `CREATE INDEX IF NOT EXISTS idx_bookmark_bookmarked_at ON bookmark(bookmarkedAt DESC)`,
+
+      // wrong_answer
+      `CREATE INDEX IF NOT EXISTS idx_wrong_answer_last_wrong_at ON wrong_answer(lastWrongAt DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_wrong_answer_wrong_count ON wrong_answer(wrongCount DESC)`,
+
+      // study_history
+      `CREATE INDEX IF NOT EXISTS idx_study_history_solved_at ON study_history(solvedAt DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_study_history_year_round ON study_history(year, round, solvedAt DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_study_history_question_id ON study_history(questionId, solvedAt DESC)`
     ];
 
     for (const index of indexes) {
@@ -194,7 +198,6 @@ export class DatabaseManager {
 
   async closeDatabase(): Promise<void> {
     if (this.db) {
-      // react-native-sqlite-2는 자동으로 연결을 관리함
       this.db = null;
       console.log('Database closed');
     }
@@ -204,12 +207,10 @@ export class DatabaseManager {
     if (!this.db) return;
 
     const tables = [
-      'bookmarks',
-      'wrong_answers', 
-      'study_stats',
-      'recent_questions',
-      'exam_results',
-      'exam_question_results'
+        'bookmark',
+        'wrong_answer',
+        'study_stats',
+        'study_history',
     ];
 
     for (const table of tables) {

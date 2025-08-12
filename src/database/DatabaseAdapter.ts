@@ -2,6 +2,7 @@ import { DatabaseManager } from './DatabaseManager';
 
 export interface IDatabaseAdapter {
   initialize(): Promise<void>;
+  initializeSchema(): Promise<void>;
   getAllRows(sql: string, params?: any[]): Promise<any[]>;
   runSql(sql: string, params?: any[]): Promise<any>;
   resetDatabase(): Promise<void>;
@@ -15,8 +16,11 @@ class NativeDatabaseAdapter implements IDatabaseAdapter {
     this.dbManager = DatabaseManager.getInstance();
   }
 
-  async initialize(): Promise<void> {
+  async initialize() {
     await this.dbManager.initialize();
+  }
+  async initializeSchema() {
+    await this.dbManager.initializeSchema();
   }
 
   async getAllRows(sql: string, params: any[] = []): Promise<any[]> {
@@ -60,6 +64,10 @@ export class DatabaseAdapter {
     await this.adapter.initialize();
   }
 
+  async initializeSchema(): Promise<void> {
+    await this.adapter.initializeSchema();
+  }
+
   async getAllRows(sql: string, params: any[] = []): Promise<any[]> {
     return await this.adapter.getAllRows(sql, params);
   }
@@ -74,5 +82,10 @@ export class DatabaseAdapter {
 
   async closeDatabase(): Promise<void> {
     await this.adapter.closeDatabase();
+  }
+
+  async bootstrap() {
+    await this.initialize();
+    await this.initializeSchema();
   }
 } 

@@ -18,7 +18,7 @@ export default function HomeScreen() {
   const initializeApp = async () => {
     try {
       console.log('Starting database initialization...');
-      await DatabaseAdapter.getInstance().initialize();
+      await DatabaseAdapter.getInstance().bootstrap();
       console.log('Database initialized successfully');
       setIsDbReady(true);
 

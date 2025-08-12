@@ -14,12 +14,8 @@ export class BookmarkService {
 
   async initialize(): Promise<void> {
     try {
-      console.log('Initializing BookmarkService...');
-
-      await this.bookmarkRepository.initializeTable();
-
-      console.log('BookmarkService initialized successfully');
       this.isInitialized = true;
+      console.log('BookmarkService initialized successfully');
     } catch (error) {
       console.error('Failed to initialize BookmarkService:', error);
       throw error;
