@@ -186,8 +186,7 @@ export class ServiceManager {
    */
   private async initializeWrongAnswerService(): Promise<void> {
     console.log('Initializing WrongAnswerService...');
-    const bookmarkService = await this.getBookmarkService();
-    this.wrongAnswerService = new WrongAnswerService(bookmarkService);
+    this.wrongAnswerService = new WrongAnswerService();
     console.log('WrongAnswerService initialized');
   }
 

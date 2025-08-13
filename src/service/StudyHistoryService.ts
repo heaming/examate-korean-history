@@ -56,13 +56,6 @@ export class StudyHistoryService {
     return await this.studyHistoryRepository.addStudyHistories(studyHistories);
   }
 
-  /**
-   * 오답 문제 조회
-   */
-  async getWrongAnswers(tags = [], limit: number=10, offset: number=0, orderType: OrderType = 'SOLVED_AT') {
-    return await this.studyHistoryRepository.getWrongAnswers(tags, limit, offset, orderType);
-  }
-
   async cleanup(): Promise<void> {
     try {
       console.log('Cleaning up StudyHistoryService...');

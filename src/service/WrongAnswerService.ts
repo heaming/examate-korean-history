@@ -7,11 +7,9 @@ dayjs.locale('ko')
 
 export class WrongAnswerService {
   private wrongAnswerRepository: WrongAnswerRepository;
-  private bookmarkService: BookmarkService;
 
-  constructor(bookmarkService: BookmarkService) {
+  constructor() {
     this.wrongAnswerRepository = new WrongAnswerRepository();
-    this.bookmarkService = bookmarkService;
   }
 
   async getWrongAnswers(tags: string[] = [], limit:number = 10, offset:number = 0, orderType: OrderType = 'RECENTLY'): Promise<WrongAnswer[]> {
