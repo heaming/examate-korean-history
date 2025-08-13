@@ -3,37 +3,6 @@ import {OrderType, StudyHistory, WrongAnswer, WrongAnswerStats} from '../types';
 import { BaseRepository } from './BaseRepository';
 
 export class WrongAnswerRepository extends BaseRepository<WrongAnswer> {
-  async initializeTable(): Promise<void> {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS wrong_answer (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        questionId TEXT NOT NULL,
-        lastWrongAt TEXT NOT NULL,
-        wrongCount INTEGER DEFAULT 1,
-        tags TEXT,
-        userAnswer INTEGER,
-        correctAnswer INTEGER NOT NULL,
-        note TEXT,
-        createdAt TEXT NOT NULL DEFAULT  (date('now'))
-      )
-    `;
-
-    await this.executeQuery(sql);
-
-    const indexSql1 = `
-      CREATE INDEX IF NOT EXISTS idx_wrong_asnwer_last_wrong_at
-      ON wrong_answer(lastWrongAt DESC)
-    `;
-
-    // year, round 복합 인덱스 (연도별/회차별 조회용)
-    const indexSql2 = `
-    CREATE INDEX IF NOT EXISTS idx_wrong_answer_wrong_count
-    ON wrong_answer(wrong_count DESC)
-    `;
-
-    await this.executeQuery(indexSql1);
-    await this.executeQuery(indexSql2);
-  }
 
   async getWrongAnswers(tags: string[] = [], limit: number = 10, offset: number = 0, orderType: OrderType): Promise<WrongAnswer[]> {
     let dynamicOrderBy = "";

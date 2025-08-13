@@ -1,13 +1,12 @@
 import { StudyStatsService } from './StudyStatsService';
 import { BookmarkService } from './BookmarkService';
-import { HomePageData } from '../types/dto';
-import {StudyHistoryService} from "@/src/services/StudyHistoryService";
+import { HomePageData } from '@/src/types';
+import {StudyHistoryService} from "@/src/service/StudyHistoryService";
 
 export class HomePageService {
     private studyStatsService: StudyStatsService;
     private studyHistoryService: StudyHistoryService;
     private bookmarkService: BookmarkService;
-    private isInitialized: boolean = false;
 
     constructor(
         studyStatsService: StudyStatsService,
@@ -19,27 +18,10 @@ export class HomePageService {
         this.bookmarkService = bookmarkService;
     }
 
-    async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
-        }
-
-        if (!this.studyStatsService || !this.bookmarkService) {
-            throw new Error('HomePageService dependencies not properly injected');
-        }
-
-        console.log('HomePageService initialized with injected dependencies');
-        this.isInitialized = true;
-    }
-
     /**
      * 홈페이지 데이터 조회
      */
     async getHomePageData(): Promise<HomePageData> {
-        if (!this.isInitialized) {
-            throw new Error('HomePageService not initialized');
-        }
-
         try {
             const [
                 studyHistoryTotalCount,
@@ -80,7 +62,6 @@ export class HomePageService {
      * 정리 메서드 (필요시)
      */
     async cleanup(): Promise<void> {
-        this.isInitialized = false;
         console.log('HomePageService cleaned up');
     }
 }

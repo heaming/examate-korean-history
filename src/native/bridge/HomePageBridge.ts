@@ -1,4 +1,4 @@
-import ServiceManager from "@/src/services/ServiceManager";
+import ServiceManager from "@/src/service/ServiceManager";
 import {BaseNativeBridge} from "@/src/native/BaseNativeBridge";
 
 export class HomePageBridge extends BaseNativeBridge {

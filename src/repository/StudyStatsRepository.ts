@@ -7,26 +7,6 @@ export class StudyStatsRepository extends BaseRepository<StudyStats> {
     super();
   }
 
-  async initializeTable(): Promise<void> {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS study_stats (
-        id INTEGER PRIMARY KEY DEFAULT 1,
-        studyStreak INTEGER NOT NULL DEFAULT 0,
-        lastStudyDate TEXT,
-        totalStudyTime INTEGER NOT NULL DEFAULT 0,
-        createdAt TEXT NOT NULL DEFAULT (date('now')),
-        updatedAt TEXT DEFAULT DEFAULT (date('now')),
-      )
-    `;
-    
-    await this.executeQuery(sql);
-
-    const existingRecord = await this.getStats();
-    if (!existingRecord) {
-      await this.createDefaultStats();
-    }
-  }
-
   async getStats(): Promise<StudyStats | null> {
     const sql = 'SELECT * FROM study_stats WHERE id = 1';
     const result = await this.executeQuery(sql);

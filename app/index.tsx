@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, StatusBar, StyleSheet, View } from 'react-native';
+import {AppState, Platform, StatusBar, StyleSheet, View} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import { DatabaseAdapter } from '../src/database/DatabaseAdapter';
-import { BridgeManager } from '../src/native/BridgeManager';
+import { DatabaseAdapter } from '@/src/database/DatabaseAdapter';
+import { BridgeManager } from '@/src/native/BridgeManager';
+import { ServiceManager } from "@/src/service/ServiceManager";
 
 export default function HomeScreen() {
   const webViewRef = useRef<WebView>(null);
@@ -15,12 +16,32 @@ export default function HomeScreen() {
     initializeApp();
   }, []);
 
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async (state) => {
+      if (state === 'background') {
+        try {
+          await ServiceManager.getInstance().cleanup();
+        } finally {
+          await DatabaseAdapter.getInstance().closeDatabase();
+        }
+      }
+    });
+
+    return () => {
+      sub.remove();
+      ServiceManager.getInstance().cleanup()
+          .finally(() => DatabaseAdapter.getInstance().closeDatabase());
+    };
+  }, []);
+
   const initializeApp = async () => {
     try {
       console.log('Starting database initialization...');
       await DatabaseAdapter.getInstance().bootstrap();
       console.log('Database initialized successfully');
       setIsDbReady(true);
+
+      await ServiceManager.getInstance().preInitializeAll();
 
       console.log('Creating BridgeManager...');
       const manager = BridgeManager.getInstance();

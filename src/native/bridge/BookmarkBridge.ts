@@ -1,5 +1,5 @@
 import { BaseNativeBridge } from '../BaseNativeBridge';
-import ServiceManager from '../../services/ServiceManager';
+import ServiceManager from '@/src/service/ServiceManager';
 
 export class BookmarkBridge extends BaseNativeBridge {
     private serviceManager = ServiceManager.getInstance();

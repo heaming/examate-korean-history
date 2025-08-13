@@ -7,41 +7,6 @@ export class BookmarkRepository extends BaseRepository<Bookmark> {
     super();
   }
 
-  /**
-   * 북마크 테이블 초기화
-   */
-  async initializeTable(): Promise<void> {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS bookmark (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        questionId TEXT NOT NULL UNIQUE,
-        year INTEGER,
-        round INTEGER,
-        questionNumber TEXT NOT NULL,
-        questionText TEXT NOT NULL,
-        questionImageUrl TEXT,
-        correctAnswer INTEGER NOT NULL,
-        note TEXT,
-        tags TEXT,
-        bookmarkedAt TEXT NOT NULL
-      )
-    `;
-
-    await this.executeQuery(sql);
-
-    // 인덱스 생성
-    const indexSql = `
-      CREATE INDEX IF NOT EXISTS idx_bookmark_question_id 
-      ON bookmark(questionId);
-      
-      CREATE INDEX IF NOT EXISTS idx_bookmark_bookmarked_at 
-      ON bookmark(bookmarkedAt DESC);
-      
-    `;
-
-    await this.executeQuery(indexSql);
-  }
-
   async findAll(): Promise<Bookmark[]> {
     const result = await this.executeQuery(
       'SELECT * FROM bookmark ORDER BY bookmarkedAt DESC'

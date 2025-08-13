@@ -1,10 +1,10 @@
 import { BookmarkService } from './BookmarkService';
 import { HomePageService } from './HomePageService';
 import { StudyStatsService } from './StudyStatsService';
-import {StudyHistoryService} from "@/src/services/StudyHistoryService";
-import {WrongAnswerService} from "@/src/services/WrongAnswerService";
+import {StudyHistoryService} from "@/src/service/StudyHistoryService";
+import {WrongAnswerService} from "@/src/service/WrongAnswerService";
 
-class ServiceManager {
+export class ServiceManager {
   private static instance: ServiceManager;
   
   // 서비스 인스턴스들
@@ -60,7 +60,6 @@ class ServiceManager {
       return this.studyHistoryService;
     }
 
-    // 동시에 여러 곳에서 호출될 경우 중복 초기화 방지
     const initKey = 'studyHistoryService';
     if (this.initializationPromises.has(initKey)) {
       await this.initializationPromises.get(initKey);
@@ -160,7 +159,6 @@ class ServiceManager {
   private async initializeStudyStatsService(): Promise<void> {
     console.log('Initializing StudyStatsService...');
     this.studyStatsService = new StudyStatsService();
-    await this.studyStatsService.initialize();
     console.log('StudyStatsService initialized');
   }
 
@@ -171,7 +169,6 @@ class ServiceManager {
   private async initializeStudyHistoryService(): Promise<void> {
     console.log('Initializing StudyHistoryService...');
     this.studyHistoryService = new StudyHistoryService();
-    await this.studyHistoryService.initialize();
     console.log('StudyHistoryService initialized');
   }
 
@@ -181,7 +178,6 @@ class ServiceManager {
   private async initializeBookmarkService(): Promise<void> {
     console.log('Initializing BookmarkService...');
     this.bookmarkService = new BookmarkService();
-    await this.bookmarkService.initialize();
     console.log('BookmarkService initialized');
   }
 
@@ -190,11 +186,8 @@ class ServiceManager {
    */
   private async initializeWrongAnswerService(): Promise<void> {
     console.log('Initializing WrongAnswerService...');
-
     const bookmarkService = await this.getBookmarkService();
     this.wrongAnswerService = new WrongAnswerService(bookmarkService);
-    await this.wrongAnswerService.initialize();
-
     console.log('WrongAnswerService initialized');
   }
 
@@ -211,27 +204,28 @@ class ServiceManager {
       this.getBookmarkService()
     ]);
 
-    // 초기화된 서비스들을 주입하여 HomePageService 생성
     this.homePageService = new HomePageService(studyStatsService, studyHistoryService, bookmarkService);
-    
     console.log('HomePageService initialized');
   }
 
   /**
-   * 모든 서비스 사전 초기화 (선택적)
+   * 서비스 사전 초기화
    */
   async preInitializeAll(): Promise<void> {
     console.log('Pre-initializing all services...');
-    
-    await Promise.all([
-      this.getStudyStatsService(),
-      this.getBookmarkService(),
-      this.getHomePageService()
-    ]);
-    
-    console.log('All services pre-initialized');
+    try {
+      await Promise.all([
+        this.getStudyStatsService(),
+        this.getStudyHistoryService(),
+        this.getBookmarkService(),
+        this.getWrongAnswerService(),
+        this.getHomePageService(),
+      ]);
+      console.log('All services pre-initialized');
+    } catch (e) {
+      console.error('preInitializeAll failed:', e);
+    }
   }
-
   /**
    * 모든 서비스 정리 (앱 종료 시)
    */
@@ -296,5 +290,3 @@ class ServiceManager {
     };
   }
 }
-
-export default ServiceManager; 

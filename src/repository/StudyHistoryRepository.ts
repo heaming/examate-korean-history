@@ -7,45 +7,6 @@ export class StudyHistoryRepository extends BaseRepository<StudyHistory> {
     super();
   }
 
-  async initializeTable(): Promise<void> {
-    const sql = `
-      CREATE TABLE IF NOT EXISTS study_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        questionId TEXT NOT NULL,
-        year INTEGER NOT NULL,
-        round INTENGER NOT NULL,
-        solvedAt TEXT NOT NULL,
-        isCorrect INTEGER,
-        userAnswer INTEGER DEFAULT 0,
-        correctAnswer INTEGER NOT NULL,
-        createdAt TEXT NOT NULL DEFAULT  (date('now'))
-      )
-    `;
-    
-    await this.executeQuery(sql);
-
-    const indexSql1 = `
-      CREATE INDEX IF NOT EXISTS idx_study_history_solved_at 
-      ON study_history(solvedAt DESC)
-    `;
-
-    // year, round 복합 인덱스 (연도별/회차별 조회용)
-    const indexSql2 = `
-    CREATE INDEX IF NOT EXISTS idx_study_history_year_round 
-    ON study_history(year, round, solvedAt DESC)
-  `;
-
-    // questionId 인덱스 (특정 문제 풀이 이력 조회용)
-    const indexSql3 = `
-    CREATE INDEX IF NOT EXISTS idx_study_history_question_id 
-    ON study_history(questionId, solvedAt DESC)
-  `;
-    
-    await this.executeQuery(indexSql1);
-    await this.executeQuery(indexSql2);
-    await this.executeQuery(indexSql3);
-  }
-
   async addStudyHistory(data: Omit<StudyHistory, 'id'>): Promise<StudyHistory> {
     const sql = `
       INSERT INTO study_history (questionId, year, round, solvedAt, isCorrect, userAnswer, correctAnswer, createdAt)
